@@ -4,7 +4,7 @@ import config
 import bottoken
 import telebot
 
-bot = telebot.TeleBot(bottoken.token)
+bot = telebot.TeleBot(bottoken.mytoken)
 
 
 @bot.message_handler(content_types=["text"])
@@ -14,4 +14,3 @@ def repeat_all_messages(message):
 
 if __name__ == '__main__':
     bot.polling(none_stop=True)
-
