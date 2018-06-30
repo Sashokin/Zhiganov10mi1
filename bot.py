@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
-
 import config
-import bottoken
 import telebot
 import time
 from telebot import types
 
 
-bot = telebot.TeleBot(bottoken.mytoken)
-
+bot = telebot.TeleBot(config.token)
 
 @bot.message_handler(content_types=["text"])
 def default_test(message):
