@@ -3,6 +3,7 @@ import config
 import telebot
 import time
 from telebot import types
+import logging
 
 
 bot = telebot.TeleBot(config.token)
@@ -16,7 +17,7 @@ def send_welcome(message):
     bot.send_message(message.chat.id, 'Привет! Я бот магазина metoyou!', reply_markup=keyboard)
 
 
-@bot.message_handler(content_types=["text"])
+@bot.message_handler(func=lambda message: True, content_types=['text'])
 def default_test(message):
     keyboard = types.InlineKeyboardMarkup()
     url_button = types.InlineKeyboardButton(text="Перейти на сайт", url="www.metoyou-shop.ru")
