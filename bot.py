@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 import config
 import telebot
-import time
 from telebot import types
 import my_markups
+import dbworker
+import config_for_token
 
 
-bot = telebot.TeleBot(config.token)
+bot = telebot.TeleBot(config_for_token.token)
 
 
 @bot.message_handler(commands=['start'])
@@ -30,9 +31,24 @@ def main_menu(message):
 def main_menu(message):
     bot.send_message(message.chat.id, 'Персональные данные', reply_markup=my_markups.personal_page)
 
+#todo:find normal database
+#@bot.message_handler(commands=['changepersonal'])
+#def cmd_change(message):
+#    state = dbworker.get_current_state(message.chat.id)
+#    if state == config.States.S_ENTER_NAME.value:
+#        bot.send_message(message.chat.id, "Введите, пожалуйста, Ваше имя")
+#    elif state == config.States.S_ENTER_GEO.value:
+#        bot.send_message(message.chat.id, 'Нажмите на кнопку, чтобы мы смогли получить Ваш номер телефона и местоположение(для дальнейшей доставки)', reply_markup=my_markups.geophone_page)
+#    else:
+#        bot.send_message(message.chat.id, "Введите, пожалуйста, Ваше имя")
+#        dbworker.set_state(message.chat.id, config.States.S_ENTER_NAME.value)
 
-@bot.message_handler(content_types=["text"])
+
+@bot.message_handler(content_types=['text'])
 def main_menu(message):
+#    if dbworker.get_current_state(message.chat.id) == config.States.S_ENTER_NAME.value:
+#        bot.send_message(message.chat.id, 'Принято! Теперь мне нужен Ваш номер телефона и местоположение(для дальнейшей доставки)', reply_markup=my_markups.geophone_page)
+#        dbworker.set_state(message.chat.id, config.States.S_ENTER_GEOPHONE.value)
     if message.text == 'Главное меню' or message.text == 'Вернуться в главное меню':
         bot.send_message(message.chat.id, 'Главное меню', reply_markup=my_markups.main_menu)
     elif message.text == 'Помощь и связь' or message.text == 'Помощь':
@@ -47,12 +63,16 @@ def main_menu(message):
         bot.send_message(message.chat.id, 'По всем вопросам: @glhflll', reply_markup=my_markups.help_page)
     elif message.text == 'Персональные данные':
         bot.send_message(message.chat.id, 'Персональные данные', reply_markup=my_markups.personal_page)
+    elif message.text == 'Изменить персональные данные':
+        bot.send_message(message.chat.id, 'Чтобы изменить персональные данные, используйте /changepersonal', reply_markup=my_markups.go_to_main_menu)
+#    elif dbworker.get_current_state(message.chat.id) == config.States.S_ENTER_GEO.value:
+#        bot.send_message(message.chat.id,'Нажмите на кнопку, чтобы мы смогли получить Ваш номер телефона и местоположение(для дальнейшей доставки)', reply_markup=my_markups.geophone_page)
     else:
         comtxt = open('commands.txt', encoding='utf-8')
-        bot.send_message(message.chat.id, 'Не понимаю Вас, вот список команд:\n\n{}\n\n'.format(comtxt.read()), reply_markup=my_markups.help_page)
+        bot.send_message(message.chat.id, 'Не понимаю Вас, вот список команд:\n\n{}\n\n'.format(comtxt.read()), reply_markup=my_markups.go_to_main_menu)
 
 
-@bot.message_handler(content_types=["sticker", "pinned_message", "photo", "audio", 'document'])
+@bot.message_handler(content_types=['sticker', 'pinned_message', 'photo', 'audio', 'document'])
 def answer_not_a_text(message):
     comtxt = open('commands.txt', encoding='utf-8')
     bot.send_message(message.chat.id, 'Не могу никак на это ответить, вот список команд\n\n{}\n\n'.format(comtxt.read()), reply_markup=my_markups.go_to_main_menu)
