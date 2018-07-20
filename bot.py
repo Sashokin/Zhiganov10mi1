@@ -4,9 +4,12 @@ import telebot
 from telebot import types
 import my_markups
 import config_for_token
+import sqlite3
 
 
 bot = telebot.TeleBot(config_for_token.token)
+
+cursor = config.conn.cursor()
 
 
 @bot.message_handler(commands=['start'])

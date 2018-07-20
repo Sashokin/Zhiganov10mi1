@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+import telebot
+from telebot import types
+import my_markups
+import config_for_token
+import sqlite3
 
-from enum import Enum
 
-db_file = "database.vdb"
+conn = sqlite3.connect("database.db")
+cursor = conn.cursor()
+#cursor.execute("""CREATE TABLE Users (id text, name text, phone text, address text, orders text, rights text)""")
 
-
-class States(Enum):
-    S_START = "0"
-    S_ENTER_NAME = "1"
-    S_ENTER_GEO = "2"
