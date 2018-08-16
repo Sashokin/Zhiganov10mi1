@@ -4,21 +4,27 @@ import telebot
 from telebot import types
 import my_markups
 import config_for_token
+import sqlite3
 
 
 bot = telebot.TeleBot(config_for_token.token)
 
 
+conn = sqlite3.connect('global.db')
+c = conn.cursor()
+
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.send_message(message.chat.id, 'Привет! Я бот магазина metoyou!')
+    bot.send_message(message.chat.id, 'Привет! Я бот магазина metoyou!😊')
+    bot.send_photo(message.chat.id, open('teddybears/start.jpg', 'rb'))
     bot.send_message(message.chat.id, 'Главное меню', reply_markup=my_markups.main_menu)
 
 
 @bot.message_handler(commands=['help'])
 def send_help(message):
     comtxt = open('commands.txt', encoding='utf-8')
-    bot.send_message(message.chat.id, 'Список команд:\n\n{}\n\nВыберите ниже раздел справки и получите всю необходимую информацию. Если вопрос не решен, обратитесь сюда: @glhflll'.format(comtxt.read()), reply_markup=my_markups.help_page)
+    bot.send_message(message.chat.id, '📌Список команд:\n\n{}\n\nВыберите ниже раздел справки и получите всю необходимую информацию. Если вопрос не решен, обратитесь сюда: @glhflll'.format(comtxt.read()), reply_markup=my_markups.help_page)
 
 
 @bot.message_handler(commands=['main'])
@@ -73,16 +79,21 @@ def main_menu(message):
         bot.send_message(message.chat.id, 'Выберите размер мишки', reply_markup=my_markups.medved_page)
     elif message.text == '🛒Выбрать товар':
         bot.send_message(message.chat.id, 'Выберите интересующий товар и нажмите на соответствующую кнопку😊', reply_markup=my_markups.menu_page)
-
+    elif message.text == '🔮Разное':
+        bot.send_message(message.chat.id, 'Извините, товаров этой категории нет в наличии😔', reply_markup=my_markups.no_goods_page)
+    elif message.text == '🎈Товары со скидкой':
+        bot.send_message(message.chat.id, 'Извините, товаров этой категории нет в наличии😔', reply_markup=my_markups.no_goods_page)
+    elif message.text == '🐻7-18 сантиметров🐻':
+        bot.send_message(message.chat.id, c.execute('SELECT theme FROM goods WHERE size_type = 1').fetchall())
     else:
         comtxt = open('commands.txt', encoding='utf-8')
-        bot.send_message(message.chat.id, 'Не понимаю Вас, вот список команд:\n\n{}\n\n'.format(comtxt.read()), reply_markup=my_markups.go_to_main_menu)
+        bot.send_message(message.chat.id, '😟Не понимаю Вас, вот список команд:\n\n{}\n\n'.format(comtxt.read()), reply_markup=my_markups.go_to_main_menu)
 
 
 @bot.message_handler(content_types=['sticker', 'pinned_message', 'photo', 'audio', 'document'])
 def answer_not_a_text(message):
     comtxt = open('commands.txt', encoding='utf-8')
-    bot.send_message(message.chat.id, 'Не могу никак на это ответить, вот список команд\n\n{}\n\n'.format(comtxt.read()), reply_markup=my_markups.go_to_main_menu)
+    bot.send_message(message.chat.id, '😟Не могу никак на это ответить, вот список команд\n\n{}\n\n'.format(comtxt.read()), reply_markup=my_markups.go_to_main_menu)
 
 
 if __name__ == '__main__':
