@@ -4,14 +4,14 @@ import telebot
 from telebot import types
 import my_markups
 import config_for_token
-import sqlite3
+from peewee import *
+import dbhelp
 
 
 bot = telebot.TeleBot(config_for_token.token)
 
 
-conn = sqlite3.connect('global.db')
-c = conn.cursor()
+#db = SqliteDatabase('database.db')
 
 
 @bot.message_handler(commands=['start'])
@@ -84,10 +84,27 @@ def main_menu(message):
     elif message.text == '🎈Товары со скидкой':
         bot.send_message(message.chat.id, 'Извините, товаров этой категории нет в наличии😔', reply_markup=my_markups.no_goods_page)
     elif message.text == '🐻7-18 сантиметров🐻':
-        bot.send_message(message.chat.id, c.execute('SELECT theme FROM goods WHERE size_type = 1').fetchall())
+        for p in dbhelp.Product.select():
+            if p.type == '1' and p.size_type == '1':
+                bot.send_message(message.chat.id, '🐻{}, {}, {}'.format(p.name, p.size, p.price))
+                bot.send_photo(message.chat.id, open('teddybears/{}.jpg'.format(p.theme), 'rb'), reply_markup=checkavailable(p.available))
+
     else:
         comtxt = open('commands.txt', encoding='utf-8')
         bot.send_message(message.chat.id, '😟Не понимаю Вас, вот список команд:\n\n{}\n\n'.format(comtxt.read()), reply_markup=my_markups.go_to_main_menu)
+
+
+def checkavailable(a):
+    mkup1 = types.InlineKeyboardMarkup()
+    mkup2 = types.InlineKeyboardMarkup()
+    mkbt1 = types.InlineKeyboardButton(text="✅Товар в наличии", callback_data="test")
+    mkbt2 = types.InlineKeyboardButton(text="❌Товара нет в наличии", callback_data="test")
+    mkup1.add(mkbt1)
+    mkup2.add(mkbt2)
+    if a=='1':
+        return mkup1
+    else:
+        return mkup2
 
 
 @bot.message_handler(content_types=['sticker', 'pinned_message', 'photo', 'audio', 'document'])
