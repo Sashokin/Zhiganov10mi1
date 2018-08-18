@@ -50,13 +50,13 @@ btn_geo = types.KeyboardButton(text='Отправить местоположен
 geophone_page.add(btn_phone, btn_geo, btn_back_main_menu)
 
 medved_page = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-btn_718 = types.KeyboardButton('🐻7-18 сантиметров🐻')
-btn_2023 = types.KeyboardButton('🐻20-23 сантиметра🐻')
-btn_25 = types.KeyboardButton('🐻25 сантиметров🐻')
+btn_718 = types.KeyboardButton('🐻10-18 сантиметров🐻')
+btn_2023 = types.KeyboardButton('🐻20 сантиметров🐻')
+btn_25 = types.KeyboardButton('🐻23-25 сантиметров🐻')
 btn_30 = types.KeyboardButton('🐻30 сантиметров🐻')
 btn_4050 = types.KeyboardButton('🐻40-50 сантиметров🐻')
-btn_60 = types.KeyboardButton('🐻60 и больше🐻')
-medved_page.add(btn_718, btn_2023, btn_25, btn_30, btn_4050, btn_60, btn_back_main_menu)
+#btn_60 = types.KeyboardButton('🐻60 и больше🐻')
+medved_page.add(btn_718, btn_2023, btn_25, btn_30, btn_4050, btn_back_main_menu)
 
 menu_page = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
 btn_sales = types.KeyboardButton('🎈Товары со скидкой')

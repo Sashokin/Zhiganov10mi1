@@ -6,6 +6,7 @@ import my_markups
 import config_for_token
 from peewee import *
 import dbhelp
+import time
 
 
 bot = telebot.TeleBot(config_for_token.token)
@@ -82,29 +83,54 @@ def main_menu(message):
     elif message.text == '🔮Разное':
         bot.send_message(message.chat.id, 'Извините, товаров этой категории нет в наличии😔', reply_markup=my_markups.no_goods_page)
     elif message.text == '🎈Товары со скидкой':
-        bot.send_message(message.chat.id, 'Извините, товаров этой категории нет в наличии😔', reply_markup=my_markups.no_goods_page)
-    elif message.text == '🐻7-18 сантиметров🐻':
         for p in dbhelp.Product.select():
-            if p.type == '1' and p.size_type == '1':
-                bot.send_message(message.chat.id, '🐻{}, {}, {}'.format(p.name, p.size, p.price))
-                bot.send_photo(message.chat.id, open('teddybears/{}.jpg'.format(p.theme), 'rb'), reply_markup=checkavailable(p.available))
-
+            if p.type == '1' and p.sale != '0':
+                bot.send_message(message.chat.id, '🐻{}, {} см., {} рублей с учетом скидки'.format(p.name, p.size, p.price))
+                bot.send_photo(message.chat.id, open('teddybears/{}.jpg'.format(p.theme), 'rb'),
+                               reply_markup=check_available(p.available))
+    elif message.text == '🐻10-18 сантиметров🐻':
+        show_product('1', '1', message)
+    elif message.text == '🐻20 сантиметров🐻':
+        show_product('1', '2', message)
+    elif message.text == '🐻23-25 сантиметров🐻':
+        show_product('1', '3', message)
+    elif message.text == '🐻30 сантиметров🐻':
+        show_product('1', '4', message)
+    elif message.text == '🐻40-50 сантиметров🐻':
+        show_product('1', '5', message)
+    elif message.text == '🎉По тематике':
+        bot.send_message(message.chat.id, 'Раздел в разработке😔')
+    elif message.text == '🎁Подарочные упаковки':
+        for p in dbhelp.Product.select():
+            if p.type == '2':
+                bot.send_message(message.chat.id, '🎁{} {} см., {} рублей '.format(p.name, p.size, p.price))
+                bot.send_photo(message.chat.id, open('teddybears/{}.jpg'.format(p.theme), 'rb'),
+                               reply_markup=check_available(p.available))
     else:
         comtxt = open('commands.txt', encoding='utf-8')
         bot.send_message(message.chat.id, '😟Не понимаю Вас, вот список команд:\n\n{}\n\n'.format(comtxt.read()), reply_markup=my_markups.go_to_main_menu)
 
 
-def checkavailable(a):
+def check_available(a):
     mkup1 = types.InlineKeyboardMarkup()
     mkup2 = types.InlineKeyboardMarkup()
     mkbt1 = types.InlineKeyboardButton(text="✅Товар в наличии", callback_data="test")
     mkbt2 = types.InlineKeyboardButton(text="❌Товара нет в наличии", callback_data="test")
     mkup1.add(mkbt1)
     mkup2.add(mkbt2)
-    if a=='1':
+    if a == '1':
         return mkup1
     else:
         return mkup2
+
+
+def show_product(product_type, size_type, message):
+    for p in dbhelp.Product.select():
+        if p.type == product_type and p.size_type == size_type:
+            bot.send_message(message.chat.id, '🐻{}, {} см., {} рублей'.format(p.name, p.size, p.price))
+            bot.send_photo(message.chat.id, open('teddybears/{}.jpg'.format(p.theme), 'rb'),
+                           reply_markup=check_available(p.available))
+
 
 
 @bot.message_handler(content_types=['sticker', 'pinned_message', 'photo', 'audio', 'document'])

@@ -8,7 +8,7 @@ from peewee import *
 
 
 #c.execute('''CREATE TABLE goods (type real, name text, theme text, size_type real, price real, available real, sale real)''')
-#type - 1 - мишка, 2 - упаковка, 3 другое. Name - имя. Theme - артикул. Size_type - размер(если мишка), 1 - 7-18, 2 - 20-23, 3 - 25, 4 - 30, 5 - 40-50, 6 - 60. size - рамзер. Price - цена. Available - доступность, 0/1. Sale - есть ли скидка на товар, 0-нет, 1-100 - размер скидки.
+#type - 1 - мишка, 2 - упаковка, 3 другое. Name - имя. Theme - артикул. Size_type - размер(если мишка), 1 - 10-18, 2 - 20, 3 - 23-25, 4 - 30, 5 - 40-50, 6 - 60. size - размер. Price - цена. Available - доступность, 0/1. Sale - есть ли скидка на товар, 0-нет, 1-100 - размер скидки.
 
 db = SqliteDatabase('database.db')
 
@@ -39,7 +39,7 @@ class User(Model):
 
 
 db.connect()
-db.create_tables([Product, User])
+#db.create_tables([Product, User])
 
 
 #G01W3807 = Product(type=1, name='Медвежонок Tatty Teddy в майке с сердечком', theme='G01W3807', size_type=1, size=10, price=600, available=1, sale=0)
