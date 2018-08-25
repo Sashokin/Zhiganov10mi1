@@ -34,6 +34,7 @@ class User(Model):
     phone = CharField() #телефон пользователя
     uvedl = CharField() #вкл/выкл новости, новые товары и тд, изначально = 1
     orders = CharField() #активные заказы
+    sendmes = CharField() #сли отправляет сообщение
 
     class Meta:
         database = db

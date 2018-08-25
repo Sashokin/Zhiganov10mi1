@@ -82,3 +82,7 @@ start_page.add(btn_input_name, btn_main_menu)
 enter_page = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
 btn_otmena = types.KeyboardButton('❌Отмена')
 enter_page.add(btn_otmena)
+
+enter_page2 = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+btn_otmena2 = types.KeyboardButton('❌Отменить')
+enter_page2.add(btn_otmena2)

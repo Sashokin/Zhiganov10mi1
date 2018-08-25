@@ -7,7 +7,7 @@ import config_for_token
 from peewee import *
 import dbhelp
 import time
-#todo: сортировка медведей по тематике, бд пользователей, корзина, пересыл сообщений от бота мне
+#todo: сортировка медведей по тематике, корзина, красивый вывод фото+текст
 
 bot = telebot.TeleBot(config_for_token.token)
 
@@ -23,7 +23,7 @@ def send_welcome(message):
         if int(p.cid) == ccid:
             cb = 1
     if cb == 0:
-        ccid = dbhelp.User(cid=ccid, type='0', name='none', phone='none', uvedl='1', orders='none')
+        ccid = dbhelp.User(cid=ccid, type='0', name='none', phone='none', uvedl='1', orders='none', sendmes='0')
         ccid.save()
         bot.send_photo(message.chat.id, open('teddybears/start.jpg', 'rb'))
         bot.send_message(message.chat.id, 'Привет!😊 Я бот магазина metoyou! А тебя я еще не знаю😔', reply_markup=my_markups.start_page)
@@ -39,7 +39,7 @@ def send_welcome(message):
 @bot.message_handler(commands=['help'])
 def send_help(message):
     comtxt = open('commands.txt', encoding='utf-8')
-    bot.send_message(message.chat.id, '📌Список команд:\n\n{}\n\nВыберите ниже раздел справки и получите всю необходимую информацию. Если вопрос не решен, обратитесь сюда: @glhflll'.format(comtxt.read()), reply_markup=my_markups.help_page)
+    bot.send_message(message.chat.id, '📌Список команд:\n\n{}\n\nВыберите ниже раздел справки'.format(comtxt.read()), reply_markup=my_markups.help_page)
 
 
 @bot.message_handler(commands=['main'])
@@ -48,39 +48,59 @@ def main_menu(message):
 
 
 @bot.message_handler(content_types=['text'])
-def main_menu(message):
+def main(message):
     ccid = message.chat.id
-    st = 0
+    enter_name = 0
+    enter_mes = 0
     for p in dbhelp.User.select():
         if str(p.cid) == str(ccid):
             if p.type == '1':
-                st = 1
+                enter_name = 1
+            if p.sendmes == '1':
+                enter_mes = 1
     if message.text == '❌Отмена':
         for p in dbhelp.User.select():
             if str(p.cid) == str(ccid):
                 p.type = '0'
                 p.save()
         bot.send_message(message.chat.id, 'Хорошо, вернемся к этому позже', reply_markup=my_markups.main_menu)
-    elif st == 1:
+    if message.text == '❌Отменить':
         for p in dbhelp.User.select():
             if str(p.cid) == str(ccid):
-                if p.type == '1':
-                    p.name = message.text
-                    p.type = '2'
-                    bot.send_message(message.chat.id, 'Хорошо, {}, я запомнил😊'.format(p.name), reply_markup=my_markups.main_menu)
-                    p.save()
+                p.sendmes = '0'
+                p.save()
+        comtxt = open('commands.txt', encoding='utf-8')
+        bot.send_message(message.chat.id, '📌Список команд:\n\n{}\n\nВыберите ниже раздел справки'.format(comtxt.read()), reply_markup=my_markups.help_page)
+    elif enter_name == 1:
+        for p in dbhelp.User.select():
+            if str(p.cid) == str(ccid):
+                p.name = message.text
+                p.type = '2'
+                bot.send_message(message.chat.id, 'Хорошо, {}, я запомнил😊'.format(p.name), reply_markup=my_markups.main_menu)
+                p.save()
+    elif enter_mes == 1:
+        for p in dbhelp.User.select():
+            if str(p.cid) == str(ccid):
+                bot.send_message(680180012, '{}(@{} / @{}) оставил сообщение: \n{}'.format(p.name, message.from_user.username, message.chat.username, message.text))
+                p.sendmes = '0'
+                p.save()
+                bot.send_message(message.chat.id, '⌨️Сообщение успешно доставлено', reply_markup=my_markups.help_page)
     elif message.text == '🚪Главное меню' or message.text == '🚪Вернуться в главное меню':
         bot.send_message(message.chat.id, 'Главное меню', reply_markup=my_markups.main_menu)
     elif message.text == '❓Помощь и связь' or message.text == '❓Помощь':
         comtxt = open('commands.txt', encoding='utf-8')
-        bot.send_message(message.chat.id, 'Список команд:\n\n{}\n\nВыберите ниже раздел справки и получите всю необходимую информацию. Если вопрос не решен, обратитесь сюда: @glhflll'.format(comtxt.read()), reply_markup=my_markups.help_page)
+        bot.send_message(message.chat.id, '📌Список команд:\n\n{}\n\nВыберите ниже раздел справки'.format(comtxt.read()), reply_markup=my_markups.help_page)
     elif message.text == '📋Информация на сайте':
         bot.send_message(message.chat.id, 'Если информации на сайте недостаточно, свяжитесь с нами', reply_markup=my_markups.to_site)
-        bot.send_message(message.chat.id, 'Связаться с нами', reply_markup=my_markups.help_page_out_site)
+        bot.send_message(message.chat.id, 'Связаться с нами', reply_markup=my_markups.help_page)
     elif message.text == '📞Позвонить':
         bot.send_message(message.chat.id, '📞 +7(916)204-12-22\n\nГрафик работы:\nБудни 9:00-21:00\nСуббота 10:00-19:00', reply_markup=my_markups.help_page)
     elif message.text == '⌨️Написать':
-        bot.send_message(message.chat.id, 'Напиишите свое сообщение, оно сразу будет передано нам', reply_markup=my_markups.help_page)
+        bot.send_message(message.chat.id, 'Напишите свое сообщение, оно сразу будет передано нам', reply_markup=my_markups.enter_page2)
+        for p in dbhelp.User.select():
+            if str(p.cid) == str(ccid):
+                p.sendmes = '1'
+                p.save()
     elif message.text == '👤Персональные данные':
         bot.send_message(message.chat.id, 'Персональные данные', reply_markup=my_markups.personal_page)
     elif message.text == '🔏Ввести имя':
