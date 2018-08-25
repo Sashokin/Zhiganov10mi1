@@ -28,11 +28,12 @@ class Product(Model):
 
 
 class User(Model):
-    type = CharField()
-    name = CharField()
-    phone = CharField()
-    uvedl = CharField()
-    orders = CharField()
+    cid = CharField() #id юзера
+    type = CharField() #изначально=0, 1 - вводит имя, 2 - ввел имя
+    name = CharField() #имя пользователя
+    phone = CharField() #телефон пользователя
+    uvedl = CharField() #вкл/выкл новости, новые товары и тд, изначально = 1
+    orders = CharField() #активные заказы
 
     class Meta:
         database = db
@@ -44,3 +45,4 @@ db.connect()
 
 #G01W3807 = Product(type=1, name='Медвежонок Tatty Teddy в майке с сердечком', theme='G01W3807', size_type=1, size=10, price=600, available=1, sale=0)
 #G01W3807.save()
+#user = User(cid=cid, type ='0, name='none', phone='none', uvedl='1', orders='none')

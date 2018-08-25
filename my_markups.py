@@ -3,6 +3,7 @@ import config
 import telebot
 import time
 from telebot import types
+import bot
 
 
 to_site = types.InlineKeyboardMarkup()
@@ -35,14 +36,11 @@ help_page_out_site.add(btn_back_main_menu)
 
 personal_page = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
 btn_name = types.KeyboardButton('Имя')
-btn_phone = types.KeyboardButton('Телефон')
-btn_adress = types.KeyboardButton('Адрес')
 btn_news = types.KeyboardButton('🛎Уведомления')
-btn_change_personal = types.KeyboardButton('🔏Изменить персональные данные')
+#btn_change_personal = types.KeyboardButton('🔏Изменить персональные данные')
 btn_orders = types.KeyboardButton('📦Заказы')
-personal_page.row(btn_name, btn_phone, btn_adress)
-personal_page.row(btn_news, btn_orders)
-personal_page.add(btn_change_personal, btn_back_main_menu)
+personal_page.row(btn_name, btn_news, btn_orders)
+personal_page.add(btn_back_main_menu)
 
 geophone_page = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
 btn_phone = types.KeyboardButton(text='Отправить номер телефона', request_contact=True)
@@ -76,3 +74,11 @@ sort_page.add(btn_back_main_menu)
 
 no_goods_page = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
 no_goods_page.add(btn_choose, btn_main_menu)
+
+start_page = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+btn_input_name = types.KeyboardButton('🔏Ввести имя')
+start_page.add(btn_input_name, btn_main_menu)
+
+enter_page = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+btn_otmena = types.KeyboardButton('❌Отмена')
+enter_page.add(btn_otmena)

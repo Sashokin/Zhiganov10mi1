@@ -7,7 +7,7 @@ import config_for_token
 from peewee import *
 import dbhelp
 import time
-
+#todo: сортировка медведей по тематике, бд пользователей, корзина, пересыл сообщений от бота мне
 
 bot = telebot.TeleBot(config_for_token.token)
 
@@ -17,9 +17,23 @@ bot = telebot.TeleBot(config_for_token.token)
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.send_message(message.chat.id, 'Привет! Я бот магазина metoyou!😊')
-    bot.send_photo(message.chat.id, open('teddybears/start.jpg', 'rb'))
-    bot.send_message(message.chat.id, 'Главное меню', reply_markup=my_markups.main_menu)
+    ccid = message.chat.id
+    cb = 0
+    for p in dbhelp.User.select():
+        if int(p.cid) == ccid:
+            cb = 1
+    if cb == 0:
+        ccid = dbhelp.User(cid=ccid, type='0', name='none', phone='none', uvedl='1', orders='none')
+        ccid.save()
+        bot.send_photo(message.chat.id, open('teddybears/start.jpg', 'rb'))
+        bot.send_message(message.chat.id, 'Привет!😊 Я бот магазина metoyou! А тебя я еще не знаю😔', reply_markup=my_markups.start_page)
+    else:
+        for p in dbhelp.User.select():
+            if int(p.cid) == ccid:
+                if p.name == 'none':
+                    bot.send_message(message.chat.id, 'Привет!😊 Я бот магазина metoyou! А тебя я до сих пор не знаю😔', reply_markup=my_markups.start_page)
+                else:
+                    bot.send_message(message.chat.id, 'Привет, {} 😊'.format(p.name), reply_markup=my_markups.main_menu)
 
 
 @bot.message_handler(commands=['help'])
@@ -33,32 +47,29 @@ def main_menu(message):
     bot.send_message(message.chat.id, 'Главное меню', reply_markup=my_markups.main_menu)
 
 
-@bot.message_handler(commands=['personal'])
-def main_menu(message):
-    bot.send_message(message.chat.id, 'Персональные данные', reply_markup=my_markups.personal_page)
-
-
-@bot.message_handler(commands=['changepersonal'])
-def cmd_change(message):
-    pass
-#    state = dbworker.get_current_state(message.chat.id)
- #   if state == config.States.S_ENTER_GEO.value:
-  #      bot.send_message(message.chat.id, 'Нажмите на кнопку, чтобы мы смогли получить Ваш номер телефона и местоположение(для дальнейшей доставки)', reply_markup=my_markups.geophone_page)
-   # else:
-    #    bot.send_message(message.chat.id, 'Введите, пожалуйста, Ваше имя')
-     #   dbworker.set_state(message.chat.id, config.States.S_ENTER_NAME.value)
-
-
-@bot.message_handler(commands=['resetpersonal'])
-def cmd_change(message):
-    pass
-#    dbworker.set_state(message.chat.id, config.States.S_START.value)
-#    bot.send_message(message.chat.id, 'Вы сбросили персональные данные, чтобы внести их, используйте /changepersonal', reply_markup=my_markups.go_to_main_menu)
-
-
 @bot.message_handler(content_types=['text'])
 def main_menu(message):
-    if message.text == '🚪Главное меню' or message.text == '🚪Вернуться в главное меню':
+    ccid = message.chat.id
+    st = 0
+    for p in dbhelp.User.select():
+        if str(p.cid) == str(ccid):
+            if p.type == '1':
+                st = 1
+    if message.text == '❌Отмена':
+        for p in dbhelp.User.select():
+            if str(p.cid) == str(ccid):
+                p.type = '0'
+                p.save()
+        bot.send_message(message.chat.id, 'Хорошо, вернемся к этому позже', reply_markup=my_markups.main_menu)
+    elif st == 1:
+        for p in dbhelp.User.select():
+            if str(p.cid) == str(ccid):
+                if p.type == '1':
+                    p.name = message.text
+                    p.type = '2'
+                    bot.send_message(message.chat.id, 'Хорошо, {}, я запомнил😊'.format(p.name), reply_markup=my_markups.main_menu)
+                    p.save()
+    elif message.text == '🚪Главное меню' or message.text == '🚪Вернуться в главное меню':
         bot.send_message(message.chat.id, 'Главное меню', reply_markup=my_markups.main_menu)
     elif message.text == '❓Помощь и связь' or message.text == '❓Помощь':
         comtxt = open('commands.txt', encoding='utf-8')
@@ -72,8 +83,12 @@ def main_menu(message):
         bot.send_message(message.chat.id, 'Напиишите свое сообщение, оно сразу будет передано нам', reply_markup=my_markups.help_page)
     elif message.text == '👤Персональные данные':
         bot.send_message(message.chat.id, 'Персональные данные', reply_markup=my_markups.personal_page)
-    elif message.text == '🔏Изменить персональные данные':
-        bot.send_message(message.chat.id, 'Чтобы изменить персональные данные, используйте /changepersonal', reply_markup=my_markups.go_to_main_menu)
+    elif message.text == '🔏Ввести имя':
+        bot.send_message(message.chat.id, 'Я запомню введенное имя', reply_markup=my_markups.enter_page)
+        for p in dbhelp.User.select():
+            if str(p.cid) == str(ccid):
+                p.type = '1'
+                p.save()
     elif message.text == '🐻Мишки':
         bot.send_message(message.chat.id, 'По какому параметру сортировать медведей?', reply_markup=my_markups.sort_page)
     elif message.text == '📏По размеру':
@@ -82,6 +97,10 @@ def main_menu(message):
         bot.send_message(message.chat.id, 'Выберите интересующий товар и нажмите на соответствующую кнопку😊', reply_markup=my_markups.menu_page)
     elif message.text == '🔮Разное':
         bot.send_message(message.chat.id, 'Извините, товаров этой категории нет в наличии😔', reply_markup=my_markups.no_goods_page)
+    elif message.text == 'Имя':
+        for p in dbhelp.User.select():
+            if str(p.cid) == str(ccid):
+                bot.send_message(message.chat.id, 'Текущее имя: {} \nИзменить?'.format(p.name), reply_markup=my_markups.start_page)
     elif message.text == '🎈Товары со скидкой':
         for p in dbhelp.Product.select():
             if p.type == '1' and p.sale != '0':
