@@ -7,7 +7,7 @@ import config_for_token
 from peewee import *
 import dbhelp
 import time
-#todo: сортировка медведей по тематике, красивый вывод фото+текст, вкл/выкл уведомления, проверить наличие+кол-во, вывод только доступных вкл/выкл
+#todo: сортировка медведей по тематике, красивый вывод фото+текст, вкл/выкл уведомления, проверить наличие+кол-во, объединение в корзине, удаление из корзины, доп предложения оформление заказа
 
 bot = telebot.TeleBot(config_for_token.token)
 
@@ -149,6 +149,7 @@ def main(message):
                     bot.send_message(message.chat.id, '🛒Ваша корзина пуста', reply_markup=my_markups.bin_page)
                 else:
                     u.bin.split(' ')
+                    #u.bin = sorted(u.bin)
                     bot.send_message(message.chat.id, '🛒Товары в вашей корзине:')
                     for i in range(len(u.bin)):
                         for p in dbhelp.Product.select():
@@ -164,7 +165,7 @@ def main(message):
                 bot.send_message(message.chat.id, '🗑Корзина очищена', reply_markup=my_markups.bin_page)
     elif message.text == '🎈Товары со скидкой':
         for p in dbhelp.Product.select():
-            if p.type == '1' and p.sale != '0':
+            if p.type == '1' and p.sale != '0' and p.available != '0':
                 bot.send_message(message.chat.id, '🐻{}, {} см., {} рублей с учетом скидки'.format(p.name, p.size, p.price))
                 bot.send_photo(message.chat.id, open('teddybears/{}.jpg'.format(p.theme), 'rb'),
                                reply_markup=check_available(p.available, p.theme))
@@ -182,7 +183,7 @@ def main(message):
         bot.send_message(message.chat.id, 'Раздел в разработке😔')
     elif message.text == '🎁Подарочные упаковки':
         for p in dbhelp.Product.select():
-            if p.type == '2':
+            if p.type == '2' and p.available != '0':
                 bot.send_message(message.chat.id, '🎁{} {} см., {} рублей '.format(p.name, p.size, p.price))
                 bot.send_photo(message.chat.id, open('teddybears/{}.jpg'.format(p.theme), 'rb'),
                                reply_markup=check_available(p.available, p.theme))
@@ -206,7 +207,7 @@ def check_available(a, b):
 
 def show_product(product_type, size_type, message):
     for p in dbhelp.Product.select():
-        if p.type == product_type and p.size_type == size_type:
+        if p.type == product_type and p.size_type == size_type and p.available != '0':
             bot.send_message(message.chat.id, '🐻{}, {} см., {} рублей'.format(p.name, p.size, p.price))
             bot.send_photo(message.chat.id, open('teddybears/{}.jpg'.format(p.theme), 'rb'),
                            reply_markup=check_available(p.available, p.theme))
