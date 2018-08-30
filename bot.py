@@ -7,7 +7,7 @@ import config_for_token
 from peewee import *
 import dbhelp
 import time
-#todo: сортировка медведей по тематике, красивый вывод фото+текст, вкл/выкл уведомления, проверить наличие+кол-во, объединение в корзине, удаление из корзины, доп предложения оформление заказа
+#todo: сортировка медведей по тематике, красивый вывод фото+текст, проверить наличие+кол-во, удаление из корзины, доп предложения, оформление заказа
 
 bot = telebot.TeleBot(config_for_token.token)
 
@@ -53,6 +53,18 @@ def add_to_bin(call):
         new_order = ''
         if call.data == 'none':
             bot.send_message(call.message.chat.id, 'Данный товар отсутствует на складе')
+        elif call.data == 'uvedl_on':
+            for u in dbhelp.User.select():
+                if str(u.cid) == str(call.message.chat.id):
+                    u.uvedl = '1'
+                    u.save()
+                    bot.send_message(call.message.chat.id, '✅Готово')
+        elif call.data == 'uvedl_off':
+            for u in dbhelp.User.select():
+                if str(u.cid) == str(call.message.chat.id):
+                    u.uvedl = '0'
+                    u.save()
+                    bot.send_message(call.message.chat.id, '✅Готово')
         else:
             for p in dbhelp.Product.select():
                 if call.data == p.theme:
@@ -63,9 +75,10 @@ def add_to_bin(call):
                         u.bin = str(new_order) + ' '
                         u.save()
                     else:
+                        u.bin.split()
                         u.bin += str(new_order) + ' '
                         u.save()
-            bot.send_message(call.message.chat.id, '🛍Товар добавлен в корзину', )
+            bot.send_message(call.message.chat.id, '🛍Товар добавлен в корзину {}')
 
 
 @bot.message_handler(content_types=['text'])
@@ -138,10 +151,24 @@ def main(message):
         bot.send_message(message.chat.id, 'Выберите интересующий товар и нажмите на соответствующую кнопку😊', reply_markup=my_markups.menu_page)
     elif message.text == '🔮Разное':
         bot.send_message(message.chat.id, 'Извините, товаров этой категории нет в наличии😔', reply_markup=my_markups.no_goods_page)
-    elif message.text == 'Имя':
+    elif message.text == '🏷Имя':
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
                 bot.send_message(message.chat.id, 'Текущее имя: {} \nИзменить?'.format(u.name), reply_markup=my_markups.start_page)
+    elif message.text == '🛎Уведомления':
+        a = ''
+        mk1 = types.InlineKeyboardMarkup()
+        mk2 = types.InlineKeyboardMarkup()
+        for u in dbhelp.User.select():
+            if str(u.cid) == str(ccid):
+                if u.uvedl == '1':
+                    mkb = types.InlineKeyboardButton(text='❌Выключить', callback_data='uvedl_off')
+                    mk1.add(mkb)
+                    bot.send_message(message.chat.id, 'Уведомления включены, выключить?', reply_markup=mk1)
+                elif u.uvedl == '0':
+                    mkb = types.InlineKeyboardButton(text='✅Включить', callback_data='uvedl_on')
+                    mk2.add(mkb)
+                    bot.send_message(message.chat.id, 'Уведомления выключены, включить?', reply_markup=mk2)
     elif message.text == '🛒Корзина':
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
@@ -149,7 +176,6 @@ def main(message):
                     bot.send_message(message.chat.id, '🛒Ваша корзина пуста', reply_markup=my_markups.bin_page)
                 else:
                     u.bin.split(' ')
-                    #u.bin = sorted(u.bin)
                     bot.send_message(message.chat.id, '🛒Товары в вашей корзине:')
                     for i in range(len(u.bin)):
                         for p in dbhelp.Product.select():

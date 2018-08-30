@@ -35,7 +35,7 @@ help_page_out_site.row(btn_phone_us, btn_mail_us)
 help_page_out_site.add(btn_back_main_menu)
 
 personal_page = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-btn_name = types.KeyboardButton('Имя')
+btn_name = types.KeyboardButton('🏷Имя')
 btn_news = types.KeyboardButton('🛎Уведомления')
 #btn_change_personal = types.KeyboardButton('🔏Изменить персональные данные')
 btn_orders = types.KeyboardButton('📦Заказы')
