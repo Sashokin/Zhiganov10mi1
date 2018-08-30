@@ -78,7 +78,7 @@ def add_to_bin(call):
                         u.bin.split()
                         u.bin += str(new_order) + ' '
                         u.save()
-            bot.send_message(call.message.chat.id, '🛍Товар добавлен в корзину {}')
+            bot.send_message(call.message.chat.id, '🛍Товар добавлен в корзину')
 
 
 @bot.message_handler(content_types=['text'])
