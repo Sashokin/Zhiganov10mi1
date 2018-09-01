@@ -7,7 +7,7 @@ import config_for_token
 from peewee import *
 import dbhelp
 import time
-#todo: сортировка медведей по тематике, красивый вывод фото+текст, проверить наличие+кол-во, удаление из корзины, доп предложения, оформление заказа
+#todo: сортировка медведей по тематике, красивый вывод фото+текст, проверить наличие+кол-во, доп предложения, оформление заказа
 
 bot = telebot.TeleBot(config_for_token.token)
 
@@ -69,29 +69,20 @@ def add_to_bin(call):
                     u.save()
                     bot.send_message(call.message.chat.id, '✅Готово')
         elif call.data[:4] == 'del_':
-            pass
-            #for p in dbhelp.Product.select():
-                #if int(call.data[4:]) == int(p.id):
-                    #del_order = p.id
-            #for u in dbhelp.User.select():
-                #if str(u.cid) == str(call.message.chat.id):
-                    #new_bin = u.bin
-                    #new_bin = new_bin.split()
-                    #n = len(new_bin)
-                    #for i in range(n):
-                        #new_bin[i] = int(new_bin[i])
-                    #for i in range(n):
-                        #if new_bin[i] == del_order:
-                            #new_bin = str(new_bin)
-                            #new2_bin = u.bin[:u.bin.find(new_bin[i])] + u.bin[u.bin.find(new_bin[i])+1:]
-                            #new_bin = str(new2_bin)
-                            #u.bin = new_bin
-                            #u.save()
-                            #if u.bin == '':
-                                #u.bin = 'none'
-                                #u.save()
-
-                            #bot.send_message(call.message.chat.id, '🛍Товар удален из корзины')
+            for p in dbhelp.Product.select():
+                if int(call.data[4:]) == int(p.id):
+                    del_order = p.id
+            for u in dbhelp.User.select():
+                if str(u.cid) == str(call.message.chat.id):
+                    new_bin = u.bin
+                    new_bin = new_bin.split(str(del_order))[0] + str(del_order).join(new_bin.split(str(del_order))[1:])
+                    u.bin = new_bin
+                    u.save()
+                    for i in range(10):
+                        if u.bin == ' '*i:
+                            u.bin = 'none'
+                            u.save()
+                    bot.send_message(call.message.chat.id, '🛍Товар удален из корзины')
         else:
             for p in dbhelp.Product.select():
                 if call.data == p.theme:
