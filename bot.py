@@ -51,6 +51,9 @@ def main_menu(message):
 def add_to_bin(call):
     if call.message:
         new_order = ''
+        del_order = ''
+        new_bin = ''
+        new2_bin = ''
         if call.data == 'none':
             bot.send_message(call.message.chat.id, 'Данный товар отсутствует на складе')
         elif call.data == 'uvedl_on':
@@ -65,6 +68,30 @@ def add_to_bin(call):
                     u.uvedl = '0'
                     u.save()
                     bot.send_message(call.message.chat.id, '✅Готово')
+        elif call.data[:4] == 'del_':
+            pass
+            #for p in dbhelp.Product.select():
+                #if int(call.data[4:]) == int(p.id):
+                    #del_order = p.id
+            #for u in dbhelp.User.select():
+                #if str(u.cid) == str(call.message.chat.id):
+                    #new_bin = u.bin
+                    #new_bin = new_bin.split()
+                    #n = len(new_bin)
+                    #for i in range(n):
+                        #new_bin[i] = int(new_bin[i])
+                    #for i in range(n):
+                        #if new_bin[i] == del_order:
+                            #new_bin = str(new_bin)
+                            #new2_bin = u.bin[:u.bin.find(new_bin[i])] + u.bin[u.bin.find(new_bin[i])+1:]
+                            #new_bin = str(new2_bin)
+                            #u.bin = new_bin
+                            #u.save()
+                            #if u.bin == '':
+                                #u.bin = 'none'
+                                #u.save()
+
+                            #bot.send_message(call.message.chat.id, '🛍Товар удален из корзины')
         else:
             for p in dbhelp.Product.select():
                 if call.data == p.theme:
@@ -75,7 +102,6 @@ def add_to_bin(call):
                         u.bin = str(new_order) + ' '
                         u.save()
                     else:
-                        u.bin.split()
                         u.bin += str(new_order) + ' '
                         u.save()
             bot.send_message(call.message.chat.id, '🛍Товар добавлен в корзину')
@@ -175,13 +201,19 @@ def main(message):
                 if u.bin == 'none':
                     bot.send_message(message.chat.id, '🛒Ваша корзина пуста', reply_markup=my_markups.bin_page)
                 else:
-                    u.bin.split(' ')
                     bot.send_message(message.chat.id, '🛒Товары в вашей корзине:')
-                    for i in range(len(u.bin)):
+                    u.bin = u.bin.split()
+                    n = len(u.bin)
+                    for i in range(n):
+                        u.bin[i] = int(u.bin[i])
+                    for i in range(n):
                         for p in dbhelp.Product.select():
+                            mark = types.InlineKeyboardMarkup()
+                            mkbtt = types.InlineKeyboardButton(text='❌Удалить товар', callback_data='del_{}'.format(p.id))
+                            mark.add(mkbtt)
                             if str(u.bin[i]) == str(p.id):
                                 bot.send_message(message.chat.id, '🐻{}, {} см., {} рублей'.format(p.name, p.size, p.price))
-                                bot.send_photo(message.chat.id, open('teddybears/{}.jpg'.format(p.theme), 'rb'))
+                                bot.send_photo(message.chat.id, open('teddybears/{}.jpg'.format(p.theme), 'rb'), reply_markup=mark)
                     bot.send_message(message.chat.id, 'Оформить заказ?', reply_markup=my_markups.order_page)
     elif message.text == '🗑Очистить корзину':
         for u in dbhelp.User.select():
