@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import config
 import telebot
 from telebot import types
 import my_markups
@@ -22,6 +21,7 @@ class Product(Model):
     price = CharField()
     available = CharField()
     sale = CharField()
+    link = CharField()
 
     class Meta:
         database = db
@@ -36,6 +36,7 @@ class User(Model):
     orders = CharField() #активные заказы
     sendmes = CharField() #если отправляет сообщение
     bin = CharField() #корзина
+    total = CharField() #итоговая стоимость
 
     class Meta:
         database = db

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import config
 import telebot
 from telebot import types
 import my_markups
@@ -7,7 +6,7 @@ import config_for_token
 from peewee import *
 import dbhelp
 import time
-#todo: сортировка медведей по тематике, красивый вывод фото+текст, проверить наличие+кол-во, доп предложения, оформление заказа
+#todo: сортировка медведей по тематике, проверка наличия в корзине перед удалением, проверить наличие+кол-во, доп предложения, оформление заказа, requeriments, db
 
 bot = telebot.TeleBot(config_for_token.token)
 
@@ -23,10 +22,10 @@ def send_welcome(message):
         if str(u.cid) == str(ccid):
             cb = 1
     if cb == 0:
-        ccid = dbhelp.User(cid=ccid, type='0', name='none', phone='none', uvedl='1', orders='none', sendmes='0', bin='none')
+        ccid = dbhelp.User(cid=ccid, type='0', name='none', phone='none', uvedl='1', orders='none', sendmes='0', bin='none', total='0')
         ccid.save()
-        bot.send_photo(message.chat.id, open('teddybears/start.jpg', 'rb'))
-        bot.send_message(message.chat.id, 'Привет!😊 Я бот магазина metoyou! А тебя я еще не знаю😔', reply_markup=my_markups.start_page)
+        bot.send_message(message.chat.id, 'Привет![😊](https://downloader.disk.yandex.ru/preview/4443b11c716c4dc497058b599e0b02256614e5866c138769098647b3f632e329/5b8c3168/xRqwR6AR0ddxuaAUUO56rT-p7gH9WJfU1u3cp6OjF18cirm8eoM_GASj-_jwzgv9gjLSwUlkyO0ENJLhHJATng%3D%3D?uid=0&filename=start.jpg&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&tknv=v2&size=2048x2048)'
+                                          ' Я бот магазина metoyou! А тебя я еще не знаю😔', parse_mode='markdown', reply_markup=my_markups.start_page)
     else:
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
@@ -51,9 +50,8 @@ def main_menu(message):
 def add_to_bin(call):
     if call.message:
         new_order = ''
+        new_total = 0
         del_order = ''
-        new_bin = ''
-        new2_bin = ''
         if call.data == 'none':
             bot.send_message(call.message.chat.id, 'Данный товар отсутствует на складе')
         elif call.data == 'uvedl_on':
@@ -72,11 +70,16 @@ def add_to_bin(call):
             for p in dbhelp.Product.select():
                 if int(call.data[4:]) == int(p.id):
                     del_order = p.id
+                    new_total = int(p.price)
             for u in dbhelp.User.select():
                 if str(u.cid) == str(call.message.chat.id):
                     new_bin = u.bin
                     new_bin = new_bin.split(str(del_order))[0] + str(del_order).join(new_bin.split(str(del_order))[1:])
+                    #dodelat
                     u.bin = new_bin
+                    a = int(u.total)
+                    new_total = a-new_total
+                    u.total = str(new_total)
                     u.save()
                     for i in range(10):
                         if u.bin == ' '*i:
@@ -87,13 +90,20 @@ def add_to_bin(call):
             for p in dbhelp.Product.select():
                 if call.data == p.theme:
                     new_order = p.id
+                    new_total = int(p.price)
             for u in dbhelp.User.select():
                 if str(u.cid) == str(call.message.chat.id):
                     if u.bin == 'none':
                         u.bin = str(new_order) + ' '
+                        a = int(u.total)
+                        new_total +=a
+                        u.total = str(new_total)
                         u.save()
                     else:
                         u.bin += str(new_order) + ' '
+                        a = int(u.total)
+                        new_total += a
+                        u.total = str(new_total)
                         u.save()
             bot.send_message(call.message.chat.id, '🛍Товар добавлен в корзину')
 
@@ -203,21 +213,19 @@ def main(message):
                             mkbtt = types.InlineKeyboardButton(text='❌Удалить товар', callback_data='del_{}'.format(p.id))
                             mark.add(mkbtt)
                             if str(u.bin[i]) == str(p.id):
-                                bot.send_message(message.chat.id, '🐻{}, {} см., {} рублей'.format(p.name, p.size, p.price))
-                                bot.send_photo(message.chat.id, open('teddybears/{}.jpg'.format(p.theme), 'rb'), reply_markup=mark)
+                                bot.send_message(message.chat.id, '[🐻]({}){}, {} см., {} рублей'.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=mark)
                     bot.send_message(message.chat.id, 'Оформить заказ?', reply_markup=my_markups.order_page)
     elif message.text == '🗑Очистить корзину':
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
                 u.bin = 'none'
+                u.total = '0'
                 u.save()
                 bot.send_message(message.chat.id, '🗑Корзина очищена', reply_markup=my_markups.bin_page)
     elif message.text == '🎈Товары со скидкой':
         for p in dbhelp.Product.select():
             if p.type == '1' and p.sale != '0' and p.available != '0':
-                bot.send_message(message.chat.id, '🐻{}, {} см., {} рублей с учетом скидки'.format(p.name, p.size, p.price))
-                bot.send_photo(message.chat.id, open('teddybears/{}.jpg'.format(p.theme), 'rb'),
-                               reply_markup=check_available(p.available, p.theme))
+                bot.send_message(message.chat.id, '[🐻]({}){}, {} см., {} рублей с учетом скидки'.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=check_available(p.available, p.theme))
     elif message.text == '🐻10-18 сантиметров🐻':
         show_product('1', '1', message)
     elif message.text == '🐻20 сантиметров🐻':
@@ -233,9 +241,11 @@ def main(message):
     elif message.text == '🎁Подарочные упаковки':
         for p in dbhelp.Product.select():
             if p.type == '2' and p.available != '0':
-                bot.send_message(message.chat.id, '🎁{} {} см., {} рублей '.format(p.name, p.size, p.price))
-                bot.send_photo(message.chat.id, open('teddybears/{}.jpg'.format(p.theme), 'rb'),
-                               reply_markup=check_available(p.available, p.theme))
+                bot.send_message(message.chat.id, '[🎁]({}){} {} см., {} рублей '.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=check_available(p.available, p.theme))
+    elif message.text == '🗳Оформить заказ':
+        for u in dbhelp.User.select():
+            if str(u.cid) == str(ccid):
+                bot.send_message(message.chat.id, '{}, подтвердите покупку: {} товаров на {} рублей '.format(u.name, 0, u.total)) #dodelat kolvo tovarov + взять номер телефона и кнопку подтвердить-оплата курьером, дальше передача заказа менеджеру
     else:
         comtxt = open('commands.txt', encoding='utf-8')
         bot.send_message(message.chat.id, '😟Не понимаю Вас, вот список команд:\n\n{}\n\n'.format(comtxt.read()), reply_markup=my_markups.go_to_main_menu)
@@ -257,9 +267,7 @@ def check_available(a, b):
 def show_product(product_type, size_type, message):
     for p in dbhelp.Product.select():
         if p.type == product_type and p.size_type == size_type and p.available != '0':
-            bot.send_message(message.chat.id, '🐻{}, {} см., {} рублей'.format(p.name, p.size, p.price))
-            bot.send_photo(message.chat.id, open('teddybears/{}.jpg'.format(p.theme), 'rb'),
-                           reply_markup=check_available(p.available, p.theme))
+            bot.send_message(message.chat.id, '[🐻]({}){}, {} см., {} рублей'.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=check_available(p.available, p.theme))
 
 
 @bot.message_handler(content_types=['sticker', 'pinned_message', 'photo', 'audio', 'document'])
