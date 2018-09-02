@@ -6,9 +6,9 @@ import config_for_token
 from peewee import *
 import dbhelp
 import time
-#todo: сортировка медведей по тематике, проверка наличия в корзине перед удалением, проверить наличие+кол-во, доп предложения, оформление заказа, requeriments, db
+#todo: сортировка медведей по тематике, проверить наличие+кол-во, доп предложения, оформление заказа, requeriments, db
 
-bot = telebot.TeleBot(config_for_token.token)
+bot = telebot.TeleBot(config_for_token.token) #токен спрятан, тк мой репозиторий на гитхабе публичный
 
 
 #db = SqliteDatabase('database.db')
@@ -75,17 +75,19 @@ def add_to_bin(call):
                 if str(u.cid) == str(call.message.chat.id):
                     new_bin = u.bin
                     new_bin = new_bin.split(str(del_order))[0] + str(del_order).join(new_bin.split(str(del_order))[1:])
-                    #dodelat
-                    u.bin = new_bin
-                    a = int(u.total)
-                    new_total = a-new_total
-                    u.total = str(new_total)
-                    u.save()
+                    if u.bin == new_bin:
+                        bot.send_message(call.message.chat.id, '🛍Этого товара уже нет в корзине')
+                    else:
+                        u.bin = new_bin
+                        a = int(u.total)
+                        new_total = a-new_total
+                        u.total = str(new_total)
+                        u.save()
+                        bot.send_message(call.message.chat.id, '🛍Товар удален из корзины')
                     for i in range(10):
                         if u.bin == ' '*i:
                             u.bin = 'none'
                             u.save()
-                    bot.send_message(call.message.chat.id, '🛍Товар удален из корзины')
         else:
             for p in dbhelp.Product.select():
                 if call.data == p.theme:
@@ -214,7 +216,7 @@ def main(message):
                             mark.add(mkbtt)
                             if str(u.bin[i]) == str(p.id):
                                 bot.send_message(message.chat.id, '[🐻]({}){}, {} см., {} рублей'.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=mark)
-                    bot.send_message(message.chat.id, 'Оформить заказ?', reply_markup=my_markups.order_page)
+                    bot.send_message(message.chat.id, 'Общая сумма: {} рублей \nОформить заказ?'.format(u.total), reply_markup=my_markups.order_page)
     elif message.text == '🗑Очистить корзину':
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
