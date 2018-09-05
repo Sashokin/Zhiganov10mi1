@@ -22,16 +22,11 @@ main_menu.row(btn_choose, btn_bin)
 main_menu.row(btn_person_data, btn_help)
 
 help_page = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-btn_phone_us = types.KeyboardButton('📞Позвонить')
 btn_mail_us = types.KeyboardButton('⌨️Написать')
 btn_info = types.KeyboardButton('📋Информация на сайте')
 btn_back_main_menu = types.KeyboardButton('🚪Вернуться в главное меню')
-help_page.row(btn_phone_us, btn_mail_us)
+help_page.row(btn_mail_us)
 help_page.add(btn_info, btn_back_main_menu)
-
-help_page_out_site = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-help_page_out_site.row(btn_phone_us, btn_mail_us)
-help_page_out_site.add(btn_back_main_menu)
 
 personal_page = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
 btn_name = types.KeyboardButton('🏷Имя')
