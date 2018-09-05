@@ -6,7 +6,7 @@ import config_for_token
 from peewee import *
 import dbhelp
 import time
-#todo: сортировка медведей по тематике, проверить наличие+кол-во, доп предложения, оформление заказа, requeriments, db
+#todo: сортировка медведей по тематике, проверить наличие+кол-во, доп предложения, requeriments, db, обработка всех типов сообщений, команды, убрать позвонить, отслеживание заказов, обработка товара/товаров, ввести имя - встроенная кнопка
 
 bot = telebot.TeleBot(config_for_token.token) #токен спрятан, тк мой репозиторий на гитхабе публичный
 
@@ -22,7 +22,7 @@ def send_welcome(message):
         if str(u.cid) == str(ccid):
             cb = 1
     if cb == 0:
-        ccid = dbhelp.User(cid=ccid, type='0', name='none', phone='none', uvedl='1', orders='none', sendmes='0', bin='none', total='0')
+        ccid = dbhelp.User(cid=ccid, type='0', name='none', phone='none', uvedl='1', orders='', sendmes='0', bin='none', total='0', kolvo='0')
         ccid.save()
         bot.send_message(message.chat.id, 'Привет![😊](https://downloader.disk.yandex.ru/preview/4443b11c716c4dc497058b599e0b02256614e5866c138769098647b3f632e329/5b8c3168/xRqwR6AR0ddxuaAUUO56rT-p7gH9WJfU1u3cp6OjF18cirm8eoM_GASj-_jwzgv9gjLSwUlkyO0ENJLhHJATng%3D%3D?uid=0&filename=start.jpg&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&tknv=v2&size=2048x2048)'
                                           ' Я бот магазина metoyou! А тебя я еще не знаю😔', parse_mode='markdown', reply_markup=my_markups.start_page)
@@ -51,6 +51,7 @@ def add_to_bin(call):
     if call.message:
         new_order = ''
         new_total = 0
+        kolvo = 0
         del_order = ''
         if call.data == 'none':
             bot.send_message(call.message.chat.id, 'Данный товар отсутствует на складе')
@@ -81,7 +82,10 @@ def add_to_bin(call):
                         u.bin = new_bin
                         a = int(u.total)
                         new_total = a-new_total
+                        kolvo = int(u.kolvo)
+                        kolvo -= 1
                         u.total = str(new_total)
+                        u.kolvo = str(kolvo)
                         u.save()
                         bot.send_message(call.message.chat.id, '🛍Товар удален из корзины')
                     for i in range(10):
@@ -100,14 +104,38 @@ def add_to_bin(call):
                         a = int(u.total)
                         new_total +=a
                         u.total = str(new_total)
+                        kolvo = int(u.kolvo)
+                        kolvo += 1
+                        u.kolvo = str(kolvo)
                         u.save()
                     else:
                         u.bin += str(new_order) + ' '
                         a = int(u.total)
                         new_total += a
                         u.total = str(new_total)
+                        u.total = str(new_total)
+                        kolvo = int(u.kolvo)
+                        kolvo += 1
+                        u.kolvo = str(kolvo)
                         u.save()
             bot.send_message(call.message.chat.id, '🛍Товар добавлен в корзину')
+
+
+@bot.message_handler(content_types=['contact'])
+def main1(message):
+    ccid = message.chat.id
+    enter_phone = 0
+    for u in dbhelp.User.select():
+        if str(u.cid) == str(ccid):
+            if u.sendmes == '2':
+                enter_phone = 1
+    if enter_phone == 1:
+        for u in dbhelp.User.select():
+            if str(u.cid) == str(ccid):
+                u.phone = message.contact.phone_number
+                u.sendmes = '0'
+                u.save()
+                bot.send_message(message.chat.id, '✅Проверьте и подтвердите заказ:\nСумма к оплате: {} рублей + доставка 300 рублей.\n{} товаров.\nОплата наличными при получении.\nМенеджер свяжется с Вами по этому номеру({}) для уточнения времени и места доставки.'.format(u.total, u.kolvo, u.phone), reply_markup=my_markups.confirm_page)
 
 
 @bot.message_handler(content_types=['text'])
@@ -127,7 +155,7 @@ def main(message):
                 u.type = '0'
                 u.save()
         bot.send_message(message.chat.id, 'Хорошо, вернемся к этому позже', reply_markup=my_markups.main_menu)
-    if message.text == '❌Отменить':
+    elif message.text == '❌Отменить':
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
                 u.sendmes = '0'
@@ -247,7 +275,28 @@ def main(message):
     elif message.text == '🗳Оформить заказ':
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
-                bot.send_message(message.chat.id, '{}, подтвердите покупку: {} товаров на {} рублей '.format(u.name, 0, u.total)) #dodelat kolvo tovarov + взять номер телефона и кнопку подтвердить-оплата курьером, дальше передача заказа менеджеру
+                bot.send_message(message.chat.id, '📦{} товаров на {} рублей\nДоставка будет стоить 300 рублей\nОставьте номер телефон, менеджер свяжется с Вами для согласования места, даты и времени доставки'.format(u.kolvo, u.total), reply_markup=my_markups.phone_page)
+                u.sendmes = '2'
+                u.save()
+    elif message.text == '✅Подтвердить':
+        for u in dbhelp.User.select():
+            if str(u.cid) == str(ccid):
+                fs = 0
+                for i in dbhelp.Order.select():
+                    fs += 1
+                fccid = ''
+                fccid = str(ccid)+str(fs)
+                fccid = dbhelp.Order.create(id=fs, user=str(ccid), phone=u.phone, bin=u.bin, total=str(int(u.total)+300), status='0')
+                fccid.save()
+                bot.send_message(680180012, 'Новый заказ:\nСумма: {}, товары: {}, телефон: {}'.format(str(int(u.total)+300), u.bin, u.phone), reply_markup=my_markups.main_menu)
+                u.bin = 'none'
+                u.total = '0'
+                u.kolvo = '0'
+                u.orders+='{} '.format(fs)
+                u.save()
+                fs = 0
+                f = ''
+                bot.send_message(message.chat.id, '✅Заказ передан менеджеру, спасибо за покупку', reply_markup=my_markups.main_menu)
     else:
         comtxt = open('commands.txt', encoding='utf-8')
         bot.send_message(message.chat.id, '😟Не понимаю Вас, вот список команд:\n\n{}\n\n'.format(comtxt.read()), reply_markup=my_markups.go_to_main_menu)
