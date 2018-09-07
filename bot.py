@@ -6,7 +6,7 @@ import config_for_token
 from peewee import *
 import dbhelp
 import time
-#todo: сортировка медведей по тематике, проверить наличие+кол-во, доп предложения, requeriments, db, команды, убрать все ссылки на сайт, отслеживание заказов, обработка товара/товаров, ввести имя - встроенная кнопка, ошибка с отображением мишек(найти новый хост)
+#todo: сортировка медведей по тематике, проверить наличие+кол-во, доп предложения, requeriments, db, команды, убрать все ссылки на сайт, отслеживание заказов, ввести имя - встроенная кнопка
 
 bot = telebot.TeleBot(config_for_token.token) #токен спрятан, тк мой репозиторий на гитхабе публичный
 
@@ -22,9 +22,9 @@ def send_welcome(message):
         if str(u.cid) == str(ccid):
             cb = 1
     if cb == 0:
-        ccid = dbhelp.User(cid=ccid, type='0', name='none', phone='none', uvedl='1', orders='', sendmes='0', bin='none', total='0', kolvo='0')
+        ccid = dbhelp.User(cid=ccid, type='0', name='none', phone='none', uvedl='1', orders='', sendmes='0', bin='none', total='0', kolvo='0', tov='')
         ccid.save()
-        bot.send_message(message.chat.id, 'Привет![😊](https://downloader.disk.yandex.ru/preview/4443b11c716c4dc497058b599e0b02256614e5866c138769098647b3f632e329/5b8c3168/xRqwR6AR0ddxuaAUUO56rT-p7gH9WJfU1u3cp6OjF18cirm8eoM_GASj-_jwzgv9gjLSwUlkyO0ENJLhHJATng%3D%3D?uid=0&filename=start.jpg&disposition=inline&hash=&limit=0&content_type=image%2Fjpeg&tknv=v2&size=2048x2048)'
+        bot.send_message(message.chat.id, 'Привет![😊](https://i.imgur.com/mPMdr9B.jpg)'
                                           ' Я бот магазина metoyou! А тебя я еще не знаю😔', parse_mode='markdown', reply_markup=my_markups.start_page)
     else:
         for u in dbhelp.User.select():
@@ -135,7 +135,14 @@ def main1(message):
                 u.phone = message.contact.phone_number
                 u.sendmes = '0'
                 u.save()
-                bot.send_message(message.chat.id, '✅Проверьте и подтвердите заказ:\nСумма к оплате: {} рублей + доставка 300 рублей.\n{} товаров.\nОплата наличными при получении.\nМенеджер свяжется с Вами по этому номеру({}) для уточнения времени и места доставки.'.format(u.total, u.kolvo, u.phone), reply_markup=my_markups.confirm_page)
+                abfc = int(u.kolvo)%10
+                if abfc == 0 or abfc == 5 or abfc == 6 or abfc == 7 or abfc == 8 or abfc == 9:
+                    u.tov = 'товаров'
+                elif abfc == 1:
+                    u.tov = 'товар'
+                elif abfc == 2 or abfc == 3 or abfc == 4:
+                    u.tov = 'товара'
+                bot.send_message(message.chat.id, '✅Проверьте и подтвердите заказ:\nСумма к оплате: {} рублей + доставка 300 рублей.\n{} {}.\nОплата наличными при получении.\nМенеджер свяжется с Вами по этому номеру({}) для уточнения времени и места доставки.'.format(u.total, u.kolvo, u.tov, u.phone), reply_markup=my_markups.confirm_page)
 
 
 @bot.message_handler(content_types=['text'])
@@ -272,8 +279,15 @@ def main(message):
                 bot.send_message(message.chat.id, '[🎁]({}){} {} см., {} рублей '.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=check_available(p.available, p.theme))
     elif message.text == '🗳Оформить заказ':
         for u in dbhelp.User.select():
+            abfc = int(u.kolvo) % 10
+            if abfc == 0 or abfc == 5 or abfc == 6 or abfc == 7 or abfc == 8 or abfc == 9:
+                u.tov = 'товаров'
+            elif abfc == 1:
+                u.tov = 'товар'
+            elif abfc == 2 or abfc == 3 or abfc == 4:
+                u.tov = 'товара'
             if str(u.cid) == str(ccid):
-                bot.send_message(message.chat.id, '📦{} товаров на {} рублей\nДоставка будет стоить 300 рублей\nОставьте номер телефон, менеджер свяжется с Вами для согласования места, даты и времени доставки'.format(u.kolvo, u.total), reply_markup=my_markups.phone_page)
+                bot.send_message(message.chat.id, '📦{} {} на {} рублей\nДоставка будет стоить 300 рублей\nОставьте номер телефон, менеджер свяжется с Вами для согласования места, даты и времени доставки'.format(u.kolvo, u.tov, u.total), reply_markup=my_markups.phone_page)
                 u.sendmes = '2'
                 u.save()
     elif message.text == '✅Подтвердить':
@@ -315,7 +329,7 @@ def check_available(a, b):
 
 def show_product(product_type, size_type, message):
     for p in dbhelp.Product.select():
-        if p.type == product_type and p.size_type == size_type and p.available != '0':
+        if p.type == product_type and p.size_type == size_type:
             bot.send_message(message.chat.id, '[🐻]({}){}, {} см., {} рублей'.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=check_available(p.available, p.theme))
 
 
