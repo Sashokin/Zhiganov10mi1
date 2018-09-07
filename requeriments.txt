@@ -1,0 +1,5 @@
+aiohttp==3.3.2
+more-itertools==4.2.0
+peewee==3.6.4
+pyTelegramBotAPI==3.6.3
+requests==2.19.1
