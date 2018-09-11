@@ -6,7 +6,7 @@ import config_for_token
 from peewee import *
 import dbhelp
 import time
-#todo: сортировка медведей по тематике, проверить наличие+кол-во, доп предложения, убрать все ссылки на сайт, отслеживание заказов(доделать), ввести имя - встроенная кнопка
+#todo: сортировка медведей по тематике, проверить наличие+кол-во, доп предложения, убрать все ссылки на сайт, отслеживание заказов(доделать), при удалении удаляется пост, пользовательские сценарии
 
 bot = telebot.TeleBot(config_for_token.token) #токен спрятан, тк мой репозиторий на гитхабе публичный
 
@@ -226,7 +226,6 @@ def main(message):
         bot.send_message(message.chat.id, '📌Список команд:\n\n{}\n\nВыберите ниже раздел справки'.format(comtxt.read()), reply_markup=my_markups.help_page)
     elif message.text == '📋Информация на сайте':
         bot.send_message(message.chat.id, 'Если информации на сайте недостаточно, свяжитесь с нами', reply_markup=my_markups.to_site)
-        bot.send_message(message.chat.id, 'Связаться с нами', reply_markup=my_markups.help_page)
     elif message.text == '⌨️Написать':
         bot.send_message(message.chat.id, 'Напишите свое сообщение, оно сразу будет передано нам', reply_markup=my_markups.enter_page2)
         for u in dbhelp.User.select():
@@ -254,7 +253,6 @@ def main(message):
             if str(u.cid) == str(ccid):
                 bot.send_message(message.chat.id, 'Текущее имя: {} \nИзменить?'.format(u.name), reply_markup=my_markups.start_page)
     elif message.text == '🛎Уведомления':
-        a = ''
         mk1 = types.InlineKeyboardMarkup()
         mk2 = types.InlineKeyboardMarkup()
         for u in dbhelp.User.select():
@@ -291,6 +289,7 @@ def main(message):
             if str(u.cid) == str(ccid):
                 u.bin = 'none'
                 u.total = '0'
+                u.kolvo = '0'
                 u.save()
                 bot.send_message(message.chat.id, '🗑Корзина очищена', reply_markup=my_markups.bin_page)
     elif message.text == '🎈Товары со скидкой':
