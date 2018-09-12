@@ -5,8 +5,7 @@ import my_markups
 import config_for_token
 from peewee import *
 import dbhelp
-import time
-#todo: сортировка медведей по тематике, проверить наличие+кол-во, доп предложения, убрать все ссылки на сайт, отслеживание заказов(доделать), при удалении удаляется пост, пользовательские сценарии
+#todo: сортировка медведей по тематике, проверить наличие+кол-во, убрать все ссылки на сайт + доделать раздел помощи, отслеживание заказов(доделать), при удалении удаляется пост
 
 bot = telebot.TeleBot(config_for_token.token) #токен спрятан, тк мой репозиторий на гитхабе публичный
 
@@ -308,7 +307,7 @@ def main(message):
         show_product('1', '5', message)
     elif message.text == '🎉По тематике':
         bot.send_message(message.chat.id, 'Раздел в разработке😔')
-    elif message.text == '🎁Подарочные упаковки':
+    elif message.text == '🎁Подарочные упаковки' or message.text == '✅Посмотреть':
         for p in dbhelp.Product.select():
             if p.type == '2' and p.available != '0':
                 bot.send_message(message.chat.id, '[🎁]({}){} {} см., {} рублей '.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=check_available(p.available, p.theme))
@@ -350,6 +349,23 @@ def main(message):
                     u.tov = 'товар'
                 elif abfc == 2 or abfc == 3 or abfc == 4:
                     u.tov = 'товара'
+                u.doppredl = check_dop_predl(ccid)
+                if u.doppredl == '1':
+                    bot.send_message(message.chat.id, '📦{} {} на {} рублей\nДоставка будет стоить 300 рублей\nОставьте номер телефон, менеджер свяжется с Вами для согласования места, даты и времени доставки'.format(u.kolvo, u.tov, u.total), reply_markup=my_markups.phone_page)
+                else:
+                    bot.send_message(message.chat.id, '✌️Я изучил заказ и пришел к выводу, что в него идеально впишутся некоторые товары', reply_markup=my_markups.dop_predl_page)
+                u.sendmes = '2'
+                u.save()
+    elif message.text == '🗳Перейти к оформлению заказа':
+        for u in dbhelp.User.select():
+            if str(u.cid) == str(ccid):
+                abfc = int(u.kolvo) % 10
+                if abfc == 0 or abfc == 5 or abfc == 6 or abfc == 7 or abfc == 8 or abfc == 9:
+                    u.tov = 'товаров'
+                elif abfc == 1:
+                    u.tov = 'товар'
+                elif abfc == 2 or abfc == 3 or abfc == 4:
+                    u.tov = 'товара'
                 bot.send_message(message.chat.id, '📦{} {} на {} рублей\nДоставка будет стоить 300 рублей\nОставьте номер телефон, менеджер свяжется с Вами для согласования места, даты и времени доставки'.format(u.kolvo, u.tov, u.total), reply_markup=my_markups.phone_page)
                 u.sendmes = '2'
                 u.save()
@@ -369,8 +385,6 @@ def main(message):
                 u.kolvo = '0'
                 u.orders = str(u.orders) + str('{} '.format(fs))
                 u.save()
-                fs = 0
-                f = ''
                 bot.send_message(message.chat.id, '✅Заказ передан менеджеру, спасибо за покупку', reply_markup=my_markups.main_menu)
     else:
         comtxt = open('commands.txt', encoding='utf-8')
@@ -394,6 +408,24 @@ def show_product(product_type, size_type, message):
     for p in dbhelp.Product.select():
         if p.type == product_type and p.size_type == size_type:
             bot.send_message(message.chat.id, '[🐻]({}){}, {} см., {} рублей'.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=check_available(p.available, p.theme))
+
+
+def check_dop_predl(ccid):
+    for u in dbhelp.User.select():
+        if str(u.cid) == str(ccid):
+            u.bin = u.bin.split()
+            n = len(u.bin)
+            for i in range(n):
+                u.bin[i] = int(u.bin[i])
+            psps = 0
+            for i in range(n):
+                for p in dbhelp.Product.select():
+                    if str(u.bin[i]) == str(p.id) and p.type == '2':
+                        psps = 1
+            if psps == 1:
+                return '1'
+            else:
+                return '0'
 
 
 @bot.message_handler(content_types=['sticker', 'pinned_message', 'photo', 'audio', 'document'])

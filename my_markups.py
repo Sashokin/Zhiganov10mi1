@@ -88,3 +88,8 @@ phone_page.add(btn_phone, btn_back_main_menu)
 confirm_page = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
 btn_confirm = types.KeyboardButton(text='✅Подтвердить')
 confirm_page.add(btn_confirm, btn_back_main_menu)
+
+dop_predl_page = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+btn_go_on_predl = types.KeyboardButton(text='✅Посмотреть')
+btn_not_go_on_predl = types.KeyboardButton('🗳Перейти к оформлению заказа')
+dop_predl_page.add(btn_go_on_predl, btn_not_go_on_predl)

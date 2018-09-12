@@ -36,6 +36,7 @@ class User(Model):
     total = CharField()  #итоговая стоимость корзины
     kolvo = CharField()  #кол-во товаров в корзине
     tov = CharField()  #товаров/товара
+    doppredl = CharField()  #доп предложения
 
     class Meta:
         database = db
