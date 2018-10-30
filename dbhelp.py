@@ -25,7 +25,7 @@ class User(Model):
     type = CharField()  # изначально=0, 1 - вводит имя, 2 - ввел имя
     name = CharField()  # имя пользователя
     phone = CharField()  # телефон пользователя
-    uvedl = CharField()  # вкл/выкл новости, увеломления о новых товарах, скидках и тд, изначально = 1
+    uvedl = CharField()  # вкл/выкл новости, увеломления о новых товарах, скидках и тд (дефолт = 1)
     orders = CharField()  # совершенные заказы
     sendmes = CharField()  # если отправляет сообщение
     bin = CharField()  # корзина на данный момент
@@ -34,6 +34,7 @@ class User(Model):
     tov = CharField()  # товаров/товара
     doppredl = CharField()  # доп предложения
     last_total = CharField()  # id последнего сообщения, где был тотал
+    product_show = CharField()  # вывод товаров, 0 - все, 1 - только те, которые есть на складе(дефолт = 0)
 
     class Meta:
         database = db

@@ -4,7 +4,7 @@ from telebot import types
 import my_markups
 import config_for_token
 import dbhelp
-# todo: сортировка медведей по тематике, проверить наличие+кол-во, доделать раздел помощи(1), исправить тотал, доставка, приветствие
+# todo: исправить тотал, доставка, залить на сервер, имя, первая настройка, faq
 
 bot = telebot.TeleBot(config_for_token.token)  # токен спрятан, тк мой репозиторий на гитхабе публичный
 
@@ -20,7 +20,7 @@ def send_welcome(message):
         if str(u.cid) == str(ccid):
             cb = 1
     if cb == 0:  # Добавляем его
-        ccid = dbhelp.User(cid=ccid, type='0', name='none', phone='none', uvedl='1', orders='', sendmes='0', bin='none', total='0', kolvo='0', tov='', doppredl='0', last_total='')
+        ccid = dbhelp.User(cid=ccid, type='0', name='none', phone='none', uvedl='1', orders='', sendmes='0', bin='none', total='0', kolvo='0', tov='', doppredl='0', last_total='', product_show='0')
         ccid.save()
         bot.send_message(message.chat.id, 'Привет![😊](https://i.imgur.com/mPMdr9B.jpg)'
                                           ' Я бот магазина metoyou!', parse_mode='markdown', reply_markup=my_markups.main_menu)
@@ -86,7 +86,7 @@ def add_to_bin(call):
         del_order = ''
         mk = types.InlineKeyboardMarkup()
         if call.data == 'none':  # Клик по товару, которого нет на складе
-            bot.send_message(call.message.chat.id, 'Данный товар отсутствует на складе')
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text='❌Данный товар отсутствует на складе')
         elif call.data == 'uvedl_on':  # Включение уведомлений
             for u in dbhelp.User.select():
                 if str(u.cid) == str(call.message.chat.id):
@@ -104,6 +104,24 @@ def add_to_bin(call):
                     mkb = types.InlineKeyboardButton(text='✅Включить', callback_data='uvedl_on')
                     mk.add(mkb)
                     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text='Уведомления выключены, включить?', reply_markup=mk)
+                    bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text='✅Готово')
+        elif call.data == 'pr_show_on':  # Включить показ только имеющихся товаров
+            for u in dbhelp.User.select():
+                if str(u.cid) == str(call.message.chat.id):
+                    u.product_show = '1'
+                    u.save()
+                    mkb = types.InlineKeyboardButton(text='🛍Показывать все', callback_data='pr_show_off')
+                    mk.add(mkb)
+                    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text='Показываются только товары в наличии. Предлагать все товары?', reply_markup=mk)
+                    bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text='✅Готово')
+        elif call.data == 'pr_show_off':  # Показывать все товары
+            for u in dbhelp.User.select():
+                if str(u.cid) == str(call.message.chat.id):
+                    u.product_show = '0'
+                    u.save()
+                    mkb = types.InlineKeyboardButton(text='🛍Показывать только в наличии', callback_data='pr_show_on')
+                    mk.add(mkb)
+                    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text='Показываются все товары. Предлагать только товары в наличии?', reply_markup=mk)
                     bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text='✅Готово')
         elif call.data[:4] == 'del_':  # Удаление из корзины
             for p in dbhelp.Product.select():
@@ -282,16 +300,29 @@ def main(message):
         bot.send_message(message.chat.id, 'Главное меню', reply_markup=my_markups.main_menu)
     elif message.text == '❓Помощь и связь' or message.text == '❓Помощь':
         send_help(message)
-    elif message.text == '🥇Качество':
-        bot.send_message(message.chat.id, '👍Мы занимаемся продажей оригинальной продукции английской компании Carte Blanche Greetings LTD \nВся продукция прошла предпродажную подготовку и торговую сертификацию\n\n [Как отличить подделку от оригинала](https://ru-poleznye-sovety.info/raznoe/proveryaem-mishku-teddi-original-ili-poddelka.html)', parse_mode='markdown')
+    elif message.text == '🥇Качество продукции':
+        bot.send_message(message.chat.id, '👍Мы занимаемся продажей оригинальной продукции английской компании Carte Blanche Greetings LTD \nВся продукция прошла предпродажную подготовку и торговую сертификацию\n\n [Как отличить подделку от оригинала](https://market.yandex.ru/journal/expertise/kak-otlichit-originalnogo-mishku-Me-to-You-ot-poddelki)', parse_mode='markdown')
     elif message.text == '⌨️Задать вопрос':
         bot.send_message(message.chat.id, 'Напишите свое сообщение, оно сразу будет передано нам', reply_markup=my_markups.enter_page2)
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
                 u.sendmes = '1'
                 u.save()
-    elif message.text == '👤Персональные данные':
+    elif message.text == '👤Пользовательские настройки':
         personal_com(message)
+    elif message.text == '⚙️Настройка показа':
+        mk1 = types.InlineKeyboardMarkup()
+        mk2 = types.InlineKeyboardMarkup()
+        for u in dbhelp.User.select():
+            if str(u.cid) == str(ccid):
+                if u.product_show == '1':
+                    mkb = types.InlineKeyboardButton(text='🛍Показывать все', callback_data='pr_show_off')
+                    mk1.add(mkb)
+                    bot.send_message(message.chat.id, 'Показываются только товары в наличии. Предлагать все товары?', reply_markup=mk1)
+                elif u.product_show == '0':
+                    mkb = types.InlineKeyboardButton(text='🛍Показывать только в наличии', callback_data='pr_show_on')
+                    mk2.add(mkb)
+                    bot.send_message(message.chat.id, 'Показываются все товары. Предлагать только товары в наличии?', reply_markup=mk2)
     elif message.text == '🔏Ввести имя':
         bot.send_message(message.chat.id, 'Я запомню введенное имя', reply_markup=my_markups.enter_page)
         for u in dbhelp.User.select():
@@ -299,13 +330,11 @@ def main(message):
                 u.type = '1'
                 u.save()
     elif message.text == '🐻Мишки' or message.text == 'Мишки':
-        bot.send_message(message.chat.id, 'По какому параметру сортировать медведей?', reply_markup=my_markups.sort_page)
-    elif message.text == '📏По размеру':
         bot.send_message(message.chat.id, 'Выберите размер мишки', reply_markup=my_markups.medved_page)
     elif message.text == '🛒Выбрать товар':
         bot.send_message(message.chat.id, 'Выберите интересующий товар😊', reply_markup=my_markups.menu_page)
     elif message.text == '🔮Разное':
-        bot.send_message(message.chat.id, 'Извините, товаров этой категории нет в наличии😔', reply_markup=my_markups.no_goods_page)
+        bot.send_message(message.chat.id, 'Извините, товаров этой категории нет в наличии😔')
     elif message.text == '🏷Имя':
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
@@ -334,9 +363,13 @@ def main(message):
                 u.save()
                 bot.send_message(message.chat.id, '🗑Корзина очищена', reply_markup=my_markups.bin_page)
     elif message.text == '🎈Товары со скидкой' or message.text == 'Скидка':
+        smth_sended = 0
         for p in dbhelp.Product.select():
             if p.type == '1' and p.sale != '0' and p.available != '0':
                 bot.send_message(message.chat.id, '[🐻]({}){}, {} см., {} рублей с учетом скидки'.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=check_available(p.available, p.theme))
+                smth_sended = 1
+        if smth_sended == 0:
+            bot.send_message(message.chat.id, 'Извините, товаров этой категории нет в наличии😔')
     elif message.text == '🐻10-18 сантиметров🐻':
         show_product('1', '1', message)
     elif message.text == '🐻20 сантиметров🐻':
@@ -350,9 +383,19 @@ def main(message):
     elif message.text == '🎉По тематике':
         bot.send_message(message.chat.id, 'Раздел в разработке😔')
     elif message.text == '🎁Подарочные упаковки' or message.text == '✅Посмотреть':
+        product_show_set = 0
+        for u in dbhelp.User.select():
+            if str(u.cid) == str(message.chat.id):
+                if u.product_show == '1':
+                    product_show_set = 1
         for p in dbhelp.Product.select():
-            if p.type == '2' and p.available != '0':
-                bot.send_message(message.chat.id, '[🎁]({}){} {} см., {} рублей '.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=check_available(p.available, p.theme))
+            if product_show_set == 1:
+                if p.type == '2' and p.available != '0':
+                    bot.send_message(message.chat.id, '[🎁]({}){} {} см., {} рублей '.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=check_available(p.available, p.theme))
+            else:
+                if p.type == '2':
+                    bot.send_message(message.chat.id, '[🎁]({}){} {} см., {} рублей '.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=check_available(p.available, p.theme))
+
     elif message.text == '📦Заказы' or message.text == 'Заказы':
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
@@ -442,16 +485,25 @@ def check_available(a, b):  # Проверка на наличие товара
     mkbt2 = types.InlineKeyboardButton(text='❌Нет в наличии', callback_data='none')
     mkup1.add(mkbt1)
     mkup2.add(mkbt2)
-    if a == '1':
+    if a != '0':
         return mkup1
     else:
         return mkup2
 
 
 def show_product(product_type, size_type, message):  # Вывод товара
+    product_show_set = 0
+    for u in dbhelp.User.select():
+        if str(u.cid) == str(message.chat.id):
+            if u.product_show == '1':
+                product_show_set = 1
     for p in dbhelp.Product.select():
-        if p.type == product_type and p.size_type == size_type:
-            bot.send_message(message.chat.id, '[🐻]({}){}, {} см., {} рублей'.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=check_available(p.available, p.theme))
+        if product_show_set == 1:
+            if p.type == product_type and p.size_type == size_type and p.available != '0':
+                bot.send_message(message.chat.id, '[🐻]({}){}, {} см., {} рублей'.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=check_available(p.available, p.theme))
+        else:
+            if p.type == product_type and p.size_type == size_type:
+                bot.send_message(message.chat.id, '[🐻]({}){}, {} см., {} рублей'.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=check_available(p.available, p.theme))
 
 
 def check_dop_predl(ccid):  # Проверяем, нужен ли пользователю какой-либо дополнительный товар
