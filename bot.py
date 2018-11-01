@@ -4,7 +4,7 @@ from telebot import types
 import my_markups
 import config_for_token
 import dbhelp
-# todo: исправить тотал, доставка, залить на сервер, имя, первая настройка, faq
+# todo: исправить тотал, доставка, имя, первая настройка, faq, показ, временные переменные
 
 bot = telebot.TeleBot(config_for_token.token)  # токен спрятан, тк мой репозиторий на гитхабе публичный
 
@@ -46,7 +46,7 @@ def main_menu(message):
 
 @bot.message_handler(commands=['buy'])  # Вкладка покупки
 def buy_com(message):
-    bot.send_message(message.chat.id, 'Выберите интересующий товар и нажмите на соответствующую кнопку😊', reply_markup=my_markups.menu_page)
+    bot.send_message(message.chat.id, '🛒Выберите интересующий товар и нажмите на соответствующую кнопку', reply_markup=my_markups.menu_page)
 
 
 @bot.message_handler(commands=['bin'])  # Вкладка корзины
@@ -74,7 +74,7 @@ def bin_com(message):
 
 @bot.message_handler(commands=['personal'])  # Вкладка данных о пользователе
 def personal_com(message):
-    bot.send_message(message.chat.id, 'Персональные данные', reply_markup=my_markups.personal_page)
+    bot.send_message(message.chat.id, 'Пользовательские настройки', reply_markup=my_markups.personal_page)
 
 
 @bot.callback_query_handler(func=lambda call: True)  # Обработчик callback кнопок
@@ -200,6 +200,9 @@ def add_to_bin(call):
                                     bot.send_message(call.message.chat.id,
                                                      '[🐻]({}){}, {} см., {} рублей'.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=mark)
                         bot.send_message(call.message.chat.id, 'Общая сумма: {} рублей \nОформить заказ?'.format(u.total), reply_markup=my_markups.order_page)
+        elif call.data == 'go_to_menu':
+            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text='📦У Вас еще нет заказов')
+            bot.send_message(call.message.chat.id, '🛒Выберите интересующий товар', reply_markup=my_markups.menu_page)
         else:  # Добавление в корзину
             for p in dbhelp.Product.select():
                 if call.data == p.theme:
@@ -258,7 +261,7 @@ def main1(message):
                 bot.send_message(message.chat.id, '✅Проверьте и подтвердите заказ:\nСумма к оплате: {} рублей + доставка 300 рублей.\n{} {}.\nОплата наличными при получении.\nМенеджер свяжется с Вами по этому номеру({}) для уточнения времени и места доставки.'.format(u.total, u.kolvo, u.tov, u.phone), reply_markup=my_markups.confirm_page)
 
 
-@bot.message_handler(content_types=['text'])  # Основной обработчик, принимает текст
+@bot.message_handler(content_types=['text'])  # Основной обработчик сообщений
 def main(message):
     ccid = message.chat.id
     enter_name = 0
@@ -310,7 +313,7 @@ def main(message):
                 u.save()
     elif message.text == '👤Пользовательские настройки':
         personal_com(message)
-    elif message.text == '⚙️Настройка показа':
+    elif message.text == '⚙️Настройка отображения':
         mk1 = types.InlineKeyboardMarkup()
         mk2 = types.InlineKeyboardMarkup()
         for u in dbhelp.User.select():
@@ -332,7 +335,7 @@ def main(message):
     elif message.text == '🐻Мишки' or message.text == 'Мишки':
         bot.send_message(message.chat.id, 'Выберите размер мишки', reply_markup=my_markups.medved_page)
     elif message.text == '🛒Выбрать товар':
-        bot.send_message(message.chat.id, 'Выберите интересующий товар😊', reply_markup=my_markups.menu_page)
+        bot.send_message(message.chat.id, '🛒Выберите интересующий товар', reply_markup=my_markups.menu_page)
     elif message.text == '🔮Разное':
         bot.send_message(message.chat.id, 'Извините, товаров этой категории нет в наличии😔')
     elif message.text == '🏷Имя':
@@ -380,8 +383,6 @@ def main(message):
         show_product('1', '4', message)
     elif message.text == '🐻40-50 сантиметров🐻':
         show_product('1', '5', message)
-    elif message.text == '🎉По тематике':
-        bot.send_message(message.chat.id, 'Раздел в разработке😔')
     elif message.text == '🎁Подарочные упаковки' or message.text == '✅Посмотреть':
         product_show_set = 0
         for u in dbhelp.User.select():
@@ -397,6 +398,7 @@ def main(message):
                     bot.send_message(message.chat.id, '[🎁]({}){} {} см., {} рублей '.format(p.link, p.name, p.size, p.price), parse_mode='markdown', reply_markup=check_available(p.available, p.theme))
 
     elif message.text == '📦Заказы' or message.text == 'Заказы':
+        smth_sended_orders = 0
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
                 u.orders = u.orders.split()
@@ -406,41 +408,50 @@ def main(message):
                 for i in range(n):
                     for o in dbhelp.Order.select():
                         if str(u.orders[i]) == str(o.id):
-                                o.bin = o.bin.split()
-                                s = len(o.bin)
-                                for abc in range(s):
-                                    o.bin[abc] = int(o.bin[abc])
-                                for abcd in range(s):
-                                    for p in dbhelp.Product.select():
-                                        if str(o.bin[abcd]) == str(p.id):
-                                            bot.send_message(message.chat.id, '[🐻]({}){}, {} см., {} рублей'.format(p.link, p.name, p.size, p.price), parse_mode='markdown')
-                                statusf = ''
-                                if o.status == '0':
-                                    statusf = '⚠️Не подтвержден'
-                                elif o.status == '1':
-                                    statusf = '❕Подтвержден, будет доставлен в назначенное время({})'.format(o.time)
-                                elif o.status == '2':
-                                    statusf = '✅Получен'
-                                elif o.status == '3':
-                                    statusf = '⛔️Отменен'
-                                bot.send_message(message.chat.id, 'Общая сумма заказа: {} рублей\nСтатус заказа: {}'.format(o.total, statusf))
+                            o.bin = o.bin.split()
+                            s = len(o.bin)
+                            for abc in range(s):
+                                o.bin[abc] = int(o.bin[abc])
+                            for abcd in range(s):
+                                for p in dbhelp.Product.select():
+                                    if str(o.bin[abcd]) == str(p.id):
+                                        bot.send_message(message.chat.id, '[🐻]({}){}, {} см., {} рублей'.format(p.link, p.name, p.size, p.price), parse_mode='markdown')
+                            statusf = ''
+                            if o.status == '0':
+                                statusf = '⚠️Не подтвержден'
+                            elif o.status == '1':
+                                statusf = '❕Подтвержден, будет доставлен в назначенное время({})'.format(o.time)
+                            elif o.status == '2':
+                                statusf = '✅Получен'
+                            elif o.status == '3':
+                                statusf = '⛔️Отменен'
+                            bot.send_message(message.chat.id, 'Общая сумма заказа: {} рублей\nСтатус заказа: {}'.format(o.total, statusf))
+                            smth_sended_orders = 1
+        if smth_sended_orders == 0:
+            mk = types.InlineKeyboardMarkup()
+            mkb = types.InlineKeyboardButton(text='🛒Выбрать товар', callback_data='go_to_menu')
+            mk.add(mkb)
+            bot.send_message(message.chat.id, '📦У Вас еще нет заказов', reply_markup=mk)
     elif message.text == '🗳Оформить заказ':
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
-                abfc = int(u.kolvo) % 10
-                if abfc == 0 or abfc == 5 or abfc == 6 or abfc == 7 or abfc == 8 or abfc == 9:
-                    u.tov = 'товаров'
-                elif abfc == 1:
-                    u.tov = 'товар'
-                elif abfc == 2 or abfc == 3 or abfc == 4:
-                    u.tov = 'товара'
-                u.doppredl = check_dop_predl(ccid)
-                if u.doppredl == '1':
-                    bot.send_message(message.chat.id, '📦{} {} на {} рублей\nДоставка будет стоить 300 рублей\nОтправьте номер телефон, менеджер свяжется с Вами для согласования места, даты и времени доставки'.format(u.kolvo, u.tov, u.total), reply_markup=my_markups.phone_page)
+                if u.bin != 'none':
+                    abfc = int(u.kolvo) % 10
+                    if abfc == 0 or abfc == 5 or abfc == 6 or abfc == 7 or abfc == 8 or abfc == 9:
+                        u.tov = 'товаров'
+                    elif abfc == 1:
+                        u.tov = 'товар'
+                    elif abfc == 2 or abfc == 3 or abfc == 4:
+                        u.tov = 'товара'
+                    u.doppredl = check_dop_predl(ccid)
+                    if u.doppredl == '1':
+                        bot.send_message(message.chat.id, '📦{} {} на {} рублей\nДоставка будет стоить 300 рублей\nОтправьте номер телефона, менеджер свяжется с Вами для согласования места, даты и времени доставки'.format(u.kolvo, u.tov, u.total), reply_markup=my_markups.phone_page)
+                    else:
+                        bot.send_message(message.chat.id, '✌️Я изучил заказ и пришел к выводу, что в него идеально впишутся некоторые товары', reply_markup=my_markups.dop_predl_page)
+                    u.sendmes = '2'
+                    u.save()
                 else:
-                    bot.send_message(message.chat.id, '✌️Я изучил заказ и пришел к выводу, что в него идеально впишутся некоторые товары', reply_markup=my_markups.dop_predl_page)
-                u.sendmes = '2'
-                u.save()
+                    bot.send_message(message.chat.id, '🗳Вы пытаетесь оформить пустой заказ, добавьте товары в корзину')
     elif message.text == '🗳Перейти к оформлению заказа':
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
