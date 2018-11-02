@@ -6,7 +6,7 @@ import config_for_token
 import dbhelp
 import time
 import logging
-# todo: имя, первая настройка, faq, тест с 2 девайсов, временные переменные
+# todo: faq
 
 bot = telebot.TeleBot(config_for_token.token)  # токен спрятан, тк мой репозиторий на гитхабе публичный
 
@@ -134,23 +134,26 @@ def add_to_bin(call):
                 if str(u.cid) == str(call.message.chat.id):
                     new_bin = u.bin
                     new_bin = new_bin.split(str(del_order))[0] + str(del_order).join(new_bin.split(str(del_order))[1:])
-                    u.bin = new_bin
-                    a = int(u.total)
-                    new_total = a-new_total
-                    kolvo = int(u.kolvo)
-                    kolvo -= 1
-                    u.total = str(new_total)
-                    u.kolvo = str(kolvo)
-                    u.save()
-                    hggh = 'rep_'+call.data[4:]
-                    mkb = types.InlineKeyboardButton(text='✅Восстановить товар', callback_data=hggh)
-                    mk.add(mkb)
-                    bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=mk)
-                    bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text='🛍Товар удален из корзины')
-                    for i in range(10):
-                        if u.bin == ' '*i:
-                            u.bin = 'none'
-                            u.save()
+                    if u.bin == new_bin:
+                        bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text='🛍Этого товара уже нет в корзине')
+                    else:
+                        u.bin = new_bin
+                        a = int(u.total)
+                        new_total = a-new_total
+                        kolvo = int(u.kolvo)
+                        kolvo -= 1
+                        u.total = str(new_total)
+                        u.kolvo = str(kolvo)
+                        u.save()
+                        hggh = 'rep_'+call.data[4:]
+                        mkb = types.InlineKeyboardButton(text='✅Восстановить товар', callback_data=hggh)
+                        mk.add(mkb)
+                        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=mk)
+                        bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text='🛍Товар удален из корзины')
+                        for i in range(10):
+                            if u.bin == ' '*i:
+                                u.bin = 'none'
+                                u.save()
         elif call.data[:4] == 'rep_':  # Восстановление товара
             for p in dbhelp.Product.select():
                 if int(call.data[4:]) == int(p.id):
@@ -278,6 +281,8 @@ def contact(message):
 def confirm_phone(ccid, message):
     for u in dbhelp.User.select():
         if str(u.cid) == str(ccid):
+            u.sendmes = '0'
+            u.save()
             abfc = int(u.kolvo) % 10
             if abfc == 0 or abfc == 5 or abfc == 6 or abfc == 7 or abfc == 8 or abfc == 9:
                 u.tov = 'товаров'
@@ -291,16 +296,15 @@ def confirm_phone(ccid, message):
 @bot.message_handler(content_types=['text'])  # Основной обработчик сообщений
 def main(message):
     ccid = message.chat.id
-    enter_name = 0
     enter_mes = 0
     for u in dbhelp.User.select():
         if str(u.cid) == str(ccid):
-            if u.type == '1':
-                enter_name = 1
             if u.sendmes == '1':
                 enter_mes = 1
             if u.sendmes == '2':
                 enter_mes = 2
+            if u.sendmes == '3':
+                enter_mes = 3
     if message.text == '❌Отмена':
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
@@ -314,12 +318,12 @@ def main(message):
                 u.save()
         comtxt = open('commands.txt', encoding='utf-8')
         bot.send_message(message.chat.id, '📌Список команд:\n\n{}\n\nВыберите ниже раздел справки'.format(comtxt.read()), reply_markup=my_markups.help_page)
-    elif enter_name == 1:
+    elif enter_mes == 3:
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
-                u.name = message.text
-                u.type = '2'
-                bot.send_message(message.chat.id, 'Хорошо, {}, я запомнил😊'.format(u.name), reply_markup=my_markups.main_menu)
+                u.phone = message.text
+                u.sendmes = '0'
+                bot.send_message(message.chat.id, 'Хорошо, я запомнил😊', reply_markup=my_markups.personal_page)
                 u.save()
     elif enter_mes == 1:
         for u in dbhelp.User.select():
@@ -335,7 +339,7 @@ def main(message):
     elif message.text == '❓Помощь и связь' or message.text == '❓Помощь':
         send_help(message)
     elif message.text == '🥇Качество продукции':
-        bot.send_message(message.chat.id, '👍Мы занимаемся продажей оригинальной продукции английской компании Carte Blanche Greetings LTD \nВся продукция прошла предпродажную подготовку и торговую сертификацию\n\n [Как отличить подделку от оригинала](https://market.yandex.ru/journal/expertise/kak-otlichit-originalnogo-mishku-Me-to-You-ot-poddelki)', parse_mode='markdown')
+        bot.send_message(message.chat.id, '👍Мы занимаемся продажей оригинальной продукции английской компании Carte Blanche Greetings LTD \nВся продукция прошла предпродажную подготовку и торговую сертификацию\n\n [Как отличить оригинал от подделки](https://market.yandex.ru/journal/expertise/kak-otlichit-originalnogo-mishku-Me-to-You-ot-poddelki)', parse_mode='markdown')
     elif message.text == '⌨️Задать вопрос':
         bot.send_message(message.chat.id, 'Напишите свое сообщение, оно сразу будет передано нам', reply_markup=my_markups.enter_page2)
         for u in dbhelp.User.select():
@@ -357,11 +361,11 @@ def main(message):
                     mkb = types.InlineKeyboardButton(text='🛍Показывать только в наличии', callback_data='pr_show_on')
                     mk2.add(mkb)
                     bot.send_message(message.chat.id, 'Показываются все товары. Предлагать только товары в наличии?', reply_markup=mk2)
-    elif message.text == '🔏Ввести имя':
-        bot.send_message(message.chat.id, 'Я запомню введенное имя', reply_markup=my_markups.enter_page)
+    elif message.text == '🔏Ввести номер телефона':
+        bot.send_message(message.chat.id, 'Я запомню введенный номер', reply_markup=my_markups.enter_page)
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
-                u.type = '1'
+                u.sendmes = '3'
                 u.save()
     elif message.text == '🐻Мишки' or message.text == 'Мишки':
         bot.send_message(message.chat.id, 'Выберите размер мишки', reply_markup=my_markups.medved_page)
@@ -375,10 +379,10 @@ def main(message):
                 smth_sended = 1
         if smth_sended == 0:
             bot.send_message(message.chat.id, 'Извините, товаров этой категории нет в наличии😔')
-    elif message.text == '🏷Имя':
+    elif message.text == '📱Номер телефона':
         for u in dbhelp.User.select():
             if str(u.cid) == str(ccid):
-                bot.send_message(message.chat.id, 'Текущее имя: {} \nИзменить?'.format(u.name), reply_markup=my_markups.start_page)
+                bot.send_message(message.chat.id, 'Текущий номер телефона: {} \nИзменить?'.format(u.phone), reply_markup=my_markups.start_page)
     elif message.text == '🛎Уведомления':
         mk1 = types.InlineKeyboardMarkup()
         mk2 = types.InlineKeyboardMarkup()
@@ -491,7 +495,7 @@ def main(message):
                         u.tov = 'товара'
                     u.doppredl = check_dop_predl(ccid)
                     if u.doppredl == '1':
-                        bot.send_message(message.chat.id, '📦{} {} на {} рублей\nОтправьте номер телефона, менеджер свяжется с Вами для согласования места, даты и способа доставки(курьером/пункт самовыдачи)'.format(u.kolvo, u.tov, u.total), reply_markup=my_markups.phone_page)
+                        bot.send_message(message.chat.id,'📦{} {} на {} рублей\nВведите/отправьте номер телефона кнопкой, менеджер свяжется с Вами для согласования места, даты и способа доставки(курьером/пункт самовыдачи)'.format(u.kolvo, u.tov, u.total), reply_markup=my_markups.phone_page)
                         u.sendmes = '2'
                         u.save()
                     else:
