@@ -46,7 +46,7 @@ class Order(Model):
     phone = CharField()  # телефон заказчика
     bin = CharField()  # корзина товара
     total = CharField()  # итоговая стоимость покупки
-    status = CharField()  # статус 0 - оформлен, 1 - подтвержден, 2 - получен
+    status = CharField()  # статус 0 - оформлен, 1 - подтвержден, 2 - получен, 3 - отменен, 4 - удален из истории
     time = CharField()  # время доставки
 
     class Meta:
