@@ -86,3 +86,7 @@ dop_predl_page = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
 btn_go_on_predl = types.KeyboardButton(text='✅Посмотреть')
 btn_not_go_on_predl = types.KeyboardButton('🗳Перейти к оформлению заказа')
 dop_predl_page.add(btn_go_on_predl, btn_not_go_on_predl)
+
+enter_phone_page = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+btn_go_on = types.KeyboardButton(text='✅Продолжить')
+enter_phone_page.add(btn_go_on, btn_phone, btn_back_main_menu)
