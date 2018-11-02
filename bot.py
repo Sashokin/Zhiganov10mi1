@@ -552,6 +552,10 @@ def main(message):
                 confirm_phone(ccid, message)
     elif message.text == 'Привет':
         bot.send_message(message.chat.id, '✌️Привет')
+    elif ccid == 680180012:
+        for u in dbhelp.User.select():
+            if u.uvedl == '1':
+                bot.send_message(int(u.cid), '{}'.format(message.text), parse_mode='markdown')
     else:
         comtxt = open('commands.txt', encoding='utf-8')
         bot.send_message(message.chat.id, '😟Не понимаю Вас, вот список команд для быстрого перехода по разделам:\n\n{}\n\n'.format(comtxt.read()), reply_markup=my_markups.go_to_main_menu)
